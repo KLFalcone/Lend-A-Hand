@@ -18,25 +18,25 @@ Team details follow
 
 ### 495 Students 
 
-Kat Falcone
+Kat Falcone  
 Nick Ocheltree
 
 ### 394 Students
 
-Katie O'Connell
+Katie O'Connell  
 Jack Gifford
 
 ### 294 Students
 
-Avery Miller
+Avery Miller  
 April Giljahn
 
 ## Prerequisites
 
-MERN
-MongoDB
-Express.js
-React Vite
+MERN  
+MongoDB  
+Express.js  
+React Vite  
 Node.js
 
 ## Set Up and Installation
