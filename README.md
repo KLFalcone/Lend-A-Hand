@@ -1,16 +1,16 @@
 # Your Team Name Here
 
-This is the team repository for <your team name here>
+This is the team repository for Team 8
 
 ## Project
 
 Project details follow. 
 
 ### Project Name
-Your Project Name goes here
+Neighborhood Help
 
 ### Project Description  
-Describe the problem solved and/or what the project is doing
+Neighborhood Help is a community-based web application where neighbors can both ask for and offer help. The platform simplifies everyday assistance tasks like grocery pickup, dog walking, or rides to the doctor. It promotes trust and stronger local connections by providing an organized and safe space for matching requests with volunteers.
 
 ## Team
 
@@ -18,19 +18,26 @@ Team details follow
 
 ### 495 Students 
 
-495 student name here
+Kat Falcone
+Nick Ocheltree
 
 ### 394 Students
 
-394 Student(s) here
+Katie O'Connell
+Jack Gifford
 
 ### 294 Students
 
-294 Student(s) here
+Avery Miller
+April Giljahn
 
 ## Prerequisites
 
-List tech stack (including version if possible) on both backend and frondend (Database).
+MERN
+MongoDB
+Express.js
+React Vite
+Node.js
 
 ## Set Up and Installation
 
