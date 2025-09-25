@@ -9,7 +9,7 @@ This is a MERN stack (MongoDB, Express, React, Node.js) web app where neighbors 
 
 We’ve kept the setup instructions super simple so everyone can get running quickly  
 
-### Project Description  
+## Project Description  
 Neighborhood Help is a community-based web application where neighbors can both ask for and offer help. The platform simplifies everyday assistance tasks like grocery pickup, dog walking, or rides to the doctor. It promotes trust and stronger local connections by providing an organized and safe space for matching requests with volunteers.
 
 ## Team
@@ -26,36 +26,6 @@ Jack Gifford
 Avery Miller  
 April Giljahn  
 
-
-## Quick Start (Advanced Setup)
-**Note:** This shortcut setup is mainly for 495/394 students or anyone already comfortable with Node/MERN.  
-It is *not recommended for 294 students or less experienced developers* — please use the detailed instructions below if you’re new to this workflow.  
-
-git clone https://github.com/FranklinUniversityCompSciPracticum/Fall_2025_Team8_Repo.git  
-cd Fall_2025_Team8_Repo  
-
-# Backend  
-cd backend  
-npm install  
-copy .env.example .env   # on Windows PowerShell  
-
-# Frontend  
-cd ../frontend  
-npm install  
-copy .env.example .env   # make sure VITE_API_BASE_URL is set  
-
-# run these in separate terminals:  
-cd backend  
-npm run dev  
-
-cd frontend  
-npm run dev  
-
-Backend API → http://localhost:5000  
-Frontend → http://localhost:5173  
-
-See below for detailed setup, common fixes, and contributing guidelines.  
-
 ## Prerequisites  
 
 Make sure you have these installed:  
@@ -66,9 +36,43 @@ Make sure you have these installed:
 
 You do **not** need to install MongoDB locally or create an Atlas account — the leads will provide the connection string in the `.env`.  
 
-All project dependencies (Express, React, Axios, Mongoose, etc.) install automatically when you run `npm install`.
+All project dependencies (Express, React, Axios, Mongoose, etc.) install automatically when you run `npm install`.  
 
-## Set Up and Installation
+
+<details>
+ <summary> Quick Start (Advanced Setup)</summary>  
+<b>Note:</b><br>
+This shortcut setup is mainly for 495/394 students or anyone already comfortable with Node/MERN.<br>
+It is <b>not recommended for 294 students or less experienced developers</b> — please use the detailed instructions below if you’re new to this workflow.<br>  
+<br>
+git clone https://github.com/FranklinUniversityCompSciPracticum/Fall_2025_Team8_Repo.git<br>  
+cd Fall_2025_Team8_Repo<br>  
+<br>
+
+**Backend**   
+cd backend  
+npm install  
+copy .env.example .env   # on Windows PowerShell  
+
+**Frontend**    
+cd ../frontend  
+npm install  
+copy .env.example .env   # make sure VITE_API_BASE_URL is set  
+
+**run these in separate terminals:**   
+cd backend  
+npm run dev  
+
+cd frontend  
+npm run dev  
+
+Backend API → http://localhost:5000  
+Frontend → http://localhost:5173  
+
+See below for detailed setup, common fixes, and contributing guidelines.  
+</details>
+
+## Full Set Up and Installation Guide
 
 ### 1. Clone the repo
 cd ~/Documents/dev    # or any folder you keep projects in 
@@ -111,6 +115,7 @@ Backend API → **http://localhost:5000**
 
 Frontend → **http://localhost:5173**  
 
+---
 ### 4. Testing  
 
 Open the frontend URL in your browser.  
@@ -119,17 +124,16 @@ Try navigating around — you should see the app load.
 
 If the backend is running, requests will save to MongoDB.  
 
-### 5. Tips for Newbies  
+***Tips for Newbies***  
 
 Always run npm install inside both backend and frontend after pulling code.  
-
-Don’t commit .env → it’s already in .gitignore.  
 
 If something breaks, delete node_modules and run npm install again.  
 
 If the app won’t start, see Common Errors & Fixes below.  
 
-### 6. Common Errors & Fixes  
+---
+### Common Errors & Fixes  
 
 Q: npm: command not found  
 A: Install Node.js from https://nodejs.org  
@@ -148,6 +152,7 @@ Q: I changed code but nothing updated
 A: Backend → restart with npm run dev (uses nodemon).  
 Frontend → stop and re-run npm run dev.  
 
+---
 ### Contributing  
 
 Team Workflow - We’re all working on the same repo, so here’s the safe way to add your code without breaking things:  
@@ -191,7 +196,7 @@ git push origin feat/your-feature-name
 git checkout main  
 git pull origin main  
 
-*** Important: ***  
+***Important***  
 Never commit directly to main. Always use a branch + PR.  
 Don’t commit .env files (they’re ignored in .gitignore anyway).  
 Always run npm install again if new dependencies are added.  
