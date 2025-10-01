@@ -1,5 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import Register from "./Register.jsx";
+import Login from "./Login.jsx";
 
 function Home() {
   const [status, setStatus] = React.useState("");
@@ -22,6 +24,8 @@ function Home() {
       <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
         <Link to="/browse">Browse Requests</Link>
         <Link to="/post">Post Request</Link>
+        <Link to="/register">Register</Link>
+        <Link to="/login">Login</Link>
       </div>
       <button onClick={checkApi}>Check API</button>
       {status && <pre>{status}</pre>}
@@ -54,6 +58,8 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/browse" element={<Browse />} />
         <Route path="/post" element={<PostRequest />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
       </Routes>
     </BrowserRouter>
   );
