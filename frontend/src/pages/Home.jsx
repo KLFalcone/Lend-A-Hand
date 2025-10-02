@@ -1,14 +1,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { api } from "../lib/api";
 
 export default function Home() {
   const [status, setStatus] = React.useState("");
-  const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
   const checkApi = async () => {
     try {
-      const res = await fetch(`${apiBase}/api/health`);
-      const data = await res.json();
+      const data = await api.health();
       setStatus(JSON.stringify(data, null, 2));
     } catch {
       setStatus("API not reachable");
@@ -22,6 +21,8 @@ export default function Home() {
       <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
         <Link to="/browse">Browse Requests</Link>
         <Link to="/post">Post Request</Link>
+        <Link to="/login">Login</Link>
+        <Link to="/register">Register</Link> 
       </div>
       <button onClick={checkApi}>Check API</button>
       {status && <pre>{status}</pre>}

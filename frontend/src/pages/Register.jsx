@@ -1,10 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { api } from "../lib/api";
 
 export default function Register() {
-  const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -13,15 +12,8 @@ export default function Register() {
     e.preventDefault();
     setMessage("");
     try {
-      const res = await fetch(`${apiBase}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Registration failed");
-
+      const data = await api.register(email, password);
+      
       setMessage("✅ Registration successful! Redirecting to login...");
       
       // Wait 1 second so the user sees the message, then go to login page

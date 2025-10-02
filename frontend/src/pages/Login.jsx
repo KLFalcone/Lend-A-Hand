@@ -1,22 +1,17 @@
 import React, { useState } from "react";
+import { api } from "../lib/api";
 
 export default function Login() {
-  const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
     try {
-      const res = await fetch(`${apiBase}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
+      const data = await api.login(email, password);
 
       // Save both token and role
       localStorage.setItem("token", data.token);
