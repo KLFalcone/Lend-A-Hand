@@ -15,17 +15,19 @@ export default function Home() {
   };
 
   return (
-    <main style={{ padding: 16 }}>
-      <h1>Neighborhood Help</h1>
-      <p>Neighbors helping neighbors with everyday tasks.</p>
-      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-        <Link to="/browse">Browse Requests</Link>
-        <Link to="/post">Post Request</Link>
-        <Link to="/login">Login</Link>
-        <Link to="/register">Register</Link> 
+    <div className="wrapper">
+      <div className="container-fluid">
+        <h1>Neighborhood Help</h1>
+        <p>Neighbors helping neighbors with everyday tasks.</p>
+        <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+          <Link to="/browse">Browse Requests</Link>
+          <Link to="/post">Post Request</Link>
+          <Link to="/login">Login</Link>
+          <Link to="/register">Register</Link> 
+        </div>
+        <button onClick={checkApi}>Check API</button>
+        {status && <pre>{status}</pre>}
       </div>
-      <button onClick={checkApi}>Check API</button>
-      {status && <pre>{status}</pre>}
-    </main>
+    </div>
   );
 }
