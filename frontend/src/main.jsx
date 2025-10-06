@@ -8,6 +8,7 @@ import Browse from './pages/Browse.jsx'
 import PostRequest from './pages/PostRequest.jsx'
 import Register from './pages/Register.jsx'
 import Login from './pages/Login.jsx'
+import Profile from './pages/Profile.jsx';
 
 const router = createBrowserRouter([
   {
@@ -34,9 +35,12 @@ const router = createBrowserRouter([
         path: "/login",
         element: <Login />
       },
-
-    ]
-  }
+      {
+        path: "/profile",
+        element: <Profile />,
+      },
+    ],
+  },
 ]);
 
 createRoot(document.getElementById('root')).render(
