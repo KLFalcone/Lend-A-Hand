@@ -1,6 +1,7 @@
 .nav-wrapper {
   width: 100%;
   background-color: #252526;
+  height: 7vh;
 }
 
 .selected-nav {
@@ -13,7 +14,7 @@
   max-width: 1750px;
   padding: 0px 10px;
   width: 100%;
-  height: 7vh;
+  height: 100%;
   justify-content: space-between;
   align-items: center;
   z-index: 2;
@@ -31,8 +32,13 @@
   font-weight: 100;
 }
 
+#nav-items {
+  height: 100%;
+}
+
 #nav-pages {
-  padding: 5px 0px;
+  /* padding: 5px 0px; */
+  height: 100%;
   border-radius: 1rem;
 }
 
@@ -42,7 +48,7 @@
   text-decoration: none;
   margin: 0px 5px;
   padding: 10px 20px;
-  border-radius: 5px;
   /* font-weight: 100; */
   font-size: 100%;
+  height: 100%;
 }

@@ -9,19 +9,19 @@ export default function MobileNavigation() {
   return (
     <MobileNavbar
       links={[
-        <Link key={1} to='./' className={pathname == '/' ? 'selected-nav' : ''}>
+        <Link key={1} to='./' className={pathname == '/' ? 'm-selected-nav' : ''}>
           Home
         </Link>,
-        <Link key={2} to='./browse' className={pathname == '/browse' ? 'selected-nav' : ''}>
+        <Link key={2} to='./browse' className={pathname == '/browse' ? 'm-selected-nav' : ''}>
           Browse
         </Link>,
-        <Link key={3} to='./post' className={pathname == '/post' ? 'selected-nav' : ''}>
+        <Link key={3} to='./post' className={pathname == '/post' ? 'm-selected-nav' : ''}>
           Post request
         </Link>,
-        <Link key={4} to='./register' className={pathname == '/register' ? 'selected-nav' : ''}>
+        <Link key={4} to='./register' className={pathname == '/register' ? 'm-selected-nav' : ''}>
           Register
         </Link>,
-        <Link key={5} to='./login' className={pathname == '/login' ? 'selected-nav' : ''}>
+        <Link key={5} to='./login' className={pathname == '/login' ? 'm-selected-nav' : ''}>
           Login
         </Link>
       ]}
