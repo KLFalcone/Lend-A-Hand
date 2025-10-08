@@ -16,7 +16,7 @@ export default function Navigation() {
           Browse
         </Link>,
         <Link key={3} to='./post' className={pathname == '/post' ? 'selected-nav' : ''}>
-          Post request
+          Post
         </Link>,
         <Link key={4} to='./register' className={pathname == '/register' ? 'selected-nav' : ''}>
           Register

@@ -16,7 +16,7 @@ export default function MobileNavigation() {
           Browse
         </Link>,
         <Link key={3} to='./post' className={pathname == '/post' ? 'm-selected-nav' : ''}>
-          Post request
+          Post
         </Link>,
         <Link key={4} to='./register' className={pathname == '/register' ? 'm-selected-nav' : ''}>
           Register
