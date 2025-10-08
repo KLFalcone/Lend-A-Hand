@@ -14,8 +14,8 @@ export default function Nav({ links }) {
       <div className="slide-out" id="m-nav-opened">
         <div id="m-nav-opened-header">
           <header id="m-header" onClick={hamburgerHandler}>
-            <Link to='./' id="m-nav-header">
-              <div id="m-nav-name">
+            <Link to='./' className="m-nav-header">
+              <div id="m-nav-name-closed">
                 Neighborhood Help
               </div>
             </Link>
@@ -30,8 +30,8 @@ export default function Nav({ links }) {
       </div>
       <div id="m-nav-closed">
         <header id="m-header" onClick={hamburgerHandler}>
-          <Link to='./' id="m-nav-header">
-            <div id="m-nav-name">
+          <Link to='./' className="m-nav-header">
+            <div id="m-nav-name-open">
               Neighborhood Help
             </div>
           </Link>

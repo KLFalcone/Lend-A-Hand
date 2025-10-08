@@ -1,10 +1,10 @@
 .nav-wrapper {
   width: 100%;
-  background-color: #dadada;
+  background-color: #252526;
 }
 
 .selected-nav {
-  background-color: #919ba5;
+  background-color: #007acc;
 }
 
 #nav {
@@ -23,12 +23,12 @@
   display: block;
   position: relative;
   text-decoration: unset;
-  color: rgb(0, 0, 0);
+  color: rgb(255, 255, 255);
 }
 
 #nav-name {
   font-size: 150%;
-  /* font-weight: 100; */
+  font-weight: 100;
 }
 
 #nav-pages {
@@ -38,16 +38,11 @@
 
 #nav-pages * {
   display: inline-block;
-  color: rgb(0, 0, 0);
+  color: rgb(255, 255, 255);
   text-decoration: none;
   margin: 0px 5px;
-  padding: 10px 10px;
+  padding: 10px 20px;
   border-radius: 5px;
   /* font-weight: 100; */
   font-size: 100%;
-  transition: transform;
-}
-
-#nav-pages *:hover {
-  transform: scale(1.2);
 }

@@ -2,7 +2,11 @@
 #exit-icon {
   width: 2rem;
   font-size: 20px;
-  color: black;
+  color: #ffffff;
+}
+
+#hamburger-icon {
+  color: #000000;
 }
 
 #m-nav-closed,
@@ -14,10 +18,19 @@
   height: 7vh;
 }
 
-#m-nav-header {
+.m-nav-header {
   display: inline-block;
   text-decoration: unset;
-  color: #000000;
+  font-size: 150%;
+  font-weight: 100;
+}
+
+#m-nav-name-open {
+  color: black;
+}
+
+#m-nav-name-closed {
+  color: white;
 }
 
 #m-nav-opened {
@@ -27,7 +40,7 @@
   transform: translateX(-100%);
   -webkit-transform: translateX(-100%);
   width: 100%;
-  background: #dadada;
+  background: #252526;
 }
 
 .slide-in {
@@ -63,11 +76,6 @@
   left: -100;
 }
 
-#m-nav-name {
-  font-size: 150%;
-  font-weight: 100;
-}
-
 #m-nav-pages {
   display: flex;
   flex-direction: column;
@@ -83,7 +91,7 @@
   text-align: center;
   text-decoration: none;
   /* width: 200px; */
-  color: #000000;
+  color: #ffffff;
   padding: 5px 10px 6px 10px;
   border-radius: 5px;
   font-size: 100%;
