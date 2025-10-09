@@ -73,6 +73,10 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+import requestsRouter from "./routes/requests.js";
+app.use("/api/requests", requestsRouter);
+
+
 // Register
 app.post("/auth/register", async (req, res) => {
   const { email, password } = req.body;
