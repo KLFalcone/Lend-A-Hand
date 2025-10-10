@@ -9,8 +9,15 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    password: { type: String, required: true }, // store hashed pw
+    password: { type: String, required: true },
     role: { type: String, enum: ["user", "admin"], default: "user" },
+
+    // --- Profile fields ---
+    name: { type: String, default: "" },
+    address: { type: String, default: "" },
+    phone: { type: String, default: "" },
+    availability: { type: String, default: "" },
+    profilePic: { type: String, default: "" },
   },
   { timestamps: true }
 );

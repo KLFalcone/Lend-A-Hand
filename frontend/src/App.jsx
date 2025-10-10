@@ -1,9 +1,30 @@
-import './App.css'
+import './reset.css';
+import './App.css';
+import React, { useState, useEffect } from 'react';
+import { Outlet } from 'react-router-dom';
+import Navigation from './components/Navigation';
+import MobileNavigation from './components/MobileNavigation';
+// import Footer from './components/Footer';
 
-import {Outlet} from 'react-router-dom';
+function App() {
+  const [matches, setMatches] = useState(
+    window.matchMedia("(min-width: 768px)").matches
+  )
 
-export default function App() {
+  useEffect(() => {
+    window
+    .matchMedia("(min-width: 768px)")
+    .addEventListener('change', e => setMatches(e.matches));
+  }, []);
+
   return (
-    <Outlet />
+    <>
+      {matches && (<Navigation />)}
+      {!matches && (<MobileNavigation />)}
+      <Outlet />
+      {/* <Footer /> */}
+    </>
   );
 }
+
+export default App
