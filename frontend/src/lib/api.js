@@ -44,4 +44,22 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
+    // --- user profile ---
+  getProfile: () =>
+    apiFetch("/api/profile", {
+      method: "GET",
+    }),
+
+  updateProfile: (updates) =>
+    apiFetch("/api/profile", {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    }),
+
+  deleteProfile: () =>
+    apiFetch("/api/profile", {
+      method: "DELETE",
+    }),
 };
+
