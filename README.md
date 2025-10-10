@@ -95,6 +95,15 @@ cd ../frontend
 npm install  
 copy .env.example .env   # make sure VITE_API_BASE_URL is set  
 
+<b>Database Seeding</b>
+
+To populate the database with demo users and requests, run:
+
+```bash
+npm run seed
+```
+ProTip: After running the seed, pop open your terminal logs or check MongoDB Compass to confirm the demo users and requests actually made it in. 
+
 ### 3. Run the app  
 
 Open two terminals (one for backend, one for frontend):  

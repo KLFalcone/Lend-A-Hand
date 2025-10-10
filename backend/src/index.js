@@ -6,12 +6,14 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import connectDB from "./db.js";
 import User from "./models/User.js";
+import requestsRouter from "./routes/requests.js";
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use("/api/requests", requestsRouter);
 
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey"; // fallback for local dev

@@ -35,10 +35,31 @@ async function seed() {
     // Create demo users
     const password1 = await bcrypt.hash("password123", 10);
     const password2 = await bcrypt.hash("adminpass", 10);
+    const password3 = await bcrypt.hash("toyota123", 10);
+    const password4 = await bcrypt.hash("pomeranians4Lif3", 10);
+    const password5 = await bcrypt.hash("beautyqueen1984", 10);
 
     const user1 = await User.create({
       email: "user@example.com",
       password: password1,
+      role: "user"
+    });
+
+    const emily = await User.create({
+      email: "emily.bowers@gmail.com",
+      password: password3,
+      role: "user"
+    });
+
+    const nealvon = await User.create({
+      email: "nealvon.elwell@gmail.com",
+      password: password4,
+      role: "user"
+    });
+
+    const becky = await User.create({
+      email: "rebecca.jones@aol.com",
+      password: password5,
       role: "user"
     });
 
@@ -61,6 +82,46 @@ async function seed() {
         title: "Dog walking help",
         description: "Need a dog walker for 30 minutes this evening",
         createdBy: admin._id
+      },
+      {
+        title: "Need a ride to airport",
+        description: "Need a ride to the airport tomorrow. I have to be there by 3pm",
+        createdBy: becky._id
+      },
+      {
+        title: "Need a ride to hospital!",
+        description: "Need a ride to the hospital asap, I am having terrible back pain!",
+        createdBy: nealvon._id
+      },
+      {
+        title: "Need help with plumbing",
+        description: "Need someone to look at my plumbing, I have to turn my water off due to a broken pipe under my sink",
+        createdBy: emily._id
+      },
+      {
+        title: "Need babysitter this Saturday",
+        description: "Need a babysitter this Saturday so that I can get some errands done",
+        createdBy: becky._id
+      },
+      {
+        title: "Need a place to stay tonight",
+        description: "Need a place to stay tonight, one adult and three children under ten",
+        createdBy: emily._id
+      },
+      {
+        title: "Need help painting",
+        description: "Need help painting my house before it rains this weekend",
+        createdBy: user1._id
+      },
+      {
+        title: "Need tailor for some work clothes",
+        description: "Need someone to tailor some work pants that I bought",
+        createdBy: nealvon._id
+      },
+      {
+        title: "Need school supplies",
+        description: "Looking for donations of school supplies for my classroom",
+        createdBy: becky._id
       }
     ]);
 
