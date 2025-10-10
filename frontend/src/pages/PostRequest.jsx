@@ -8,6 +8,14 @@ export default function PostRequest() {
   const [description, setDescription] = React.useState("");
   const [message, setMessage] = React.useState("");
 
+  // Redirect if not logged in
+  React.useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+    }
+  }, [navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
