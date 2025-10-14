@@ -1,12 +1,8 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 
-export default async function connectDB() {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("Connected to MongoDB Atlas");
-    return mongoose.connection;
-  } catch (err) {
-    console.error("Failed to connect DB:", err.message);
-    process.exit(1);
-  }
+export default async function connectDb() {
+  const uri = process.env.MONGO_URI
+  if (!uri) throw new Error('MONGO_URI missing in .env')
+  await mongoose.connect(uri)
+  console.log('MongoDB connected')
 }
