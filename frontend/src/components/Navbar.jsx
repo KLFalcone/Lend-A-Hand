@@ -1,20 +1,24 @@
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
+import "./Navigation.css";
 
-export default function Nav({ links }) {
+export default function Navbar({ links = [], right = null }) {
   return (
     <div className="nav-wrapper">
       <nav id="nav">
-        <header id="header">
-          <Link to='./' id="nav-header">
-            <div id="nav-name">
-              Neighborhood Help
-            </div>
+        <div id="nav-left">
+          <Link to="/" id="nav-header" aria-label="Neighborhood Help home">
+            <div id="nav-name">Neighborhood Help</div>
           </Link>
-        </header>
-        <div id="nav-items">
+        </div>
+
+        <div id="nav-center">
           <div id="nav-pages">
             {links.map((link) => link)}
           </div>
+        </div>
+
+        <div id="nav-right">
+          {right}
         </div>
       </nav>
     </div>

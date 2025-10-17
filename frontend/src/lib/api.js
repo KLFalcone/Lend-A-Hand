@@ -1,4 +1,3 @@
-// frontend/src/lib/api.js
 const RAW_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 const BASE = RAW_BASE.replace(/\/+$/, ''); // strip trailing slash
 
@@ -98,4 +97,11 @@ export const api = {
       body: JSON.stringify(updates),
     }),
   deleteRequest: (id) => apiFetch(`/api/v1/requests/${id}`, { method: 'DELETE' }),
+
+  // --- notifications ---
+  listNotifications: () => apiFetch('/api/v1/notifications'),
+  markNotificationRead: (id) =>
+    apiFetch(`/api/v1/notifications/${id}/read`, { method: 'PATCH' }),
+  markAllNotificationsRead: () =>
+    apiFetch('/api/v1/notifications/read-all', { method: 'PATCH' }),
 };
