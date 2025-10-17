@@ -3,10 +3,11 @@ const RAW_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 const BASE = RAW_BASE.replace(/\/+$/, ''); // strip trailing slash
 
 const DEFAULT_FETCH_OPTS = {
-  credentials: 'include',
+  credentials: 'include', // send/receive auth cookie
 };
 
 function authHeaders() {
+  // Optional: if you also store a token in localStorage, we attach it.
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -63,36 +64,38 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
-
-  register: (email, password) =>
+  register: (email, password, displayName) =>
     apiFetch('/api/v1/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, displayName }),
     }),
-
   logout: () => apiFetch('/api/v1/auth/logout', { method: 'POST' }),
-
   me: () => apiFetch('/api/v1/auth/me'),
 
-  // --- requests ---
-  listRequests: () => apiFetch('/api/v1/requests'),
+  // --- users / profile ---
+  getProfile: () => apiFetch('/api/v1/users/me'),
+  updateMe: (payload) =>
+    apiFetch('/api/v1/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify(payload), // { displayName, address, phone, availability, profilePic }
+    }),
+  listUsers: () => apiFetch('/api/v1/users'),
 
+  // --- requests ---
+  listRequests: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch(`/api/v1/requests${qs ? `?${qs}` : ''}`);
+  },
   createRequest: (payload) =>
     apiFetch('/api/v1/requests', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
-
   getRequest: (id) => apiFetch(`/api/v1/requests/${id}`),
-
   updateRequest: (id, updates) =>
     apiFetch(`/api/v1/requests/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(updates),
     }),
-
   deleteRequest: (id) => apiFetch(`/api/v1/requests/${id}`, { method: 'DELETE' }),
-
-  // --- users (backend currently: list only) ---
-  listUsers: () => apiFetch('/api/v1/users'),
 };

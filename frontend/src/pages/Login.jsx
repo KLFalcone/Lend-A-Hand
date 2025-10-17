@@ -11,19 +11,27 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
+
     try {
-      const data = await api.login(email, password);
+      // login request
+      const { user } = await api.login(email, password); // fix: destructure { user }
 
-      // Save both token and role
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
+      // optionally persist basic info (frontend-only session)
+      localStorage.setItem("userEmail", user.email);
+      localStorage.setItem("displayName", user.displayName || "");
+      localStorage.setItem("role", user.role || "user");
 
-      setMessage(`✅ Login successful! You are logged in as ${data.role}.`);
+      setMessage(
+        `✅ Login successful! Welcome ${
+          user.displayName || user.email.split("@")[0]
+        }.`
+      );
 
       // Redirect to profile after short delay
       setTimeout(() => navigate("/profile"), 800);
     } catch (err) {
-      setMessage(`❌ ${err.message}`);
+      console.error("Login error:", err);
+      setMessage(`❌ ${err.message || "Login failed."}`);
     }
   };
 
@@ -51,9 +59,11 @@ export default function Login() {
         </div>
         <button type="submit">Login</button>
       </form>
+
       {message && <p>{message}</p>}
+
       <p>
-        Don't have an account? <Link to="/register">Register</Link>
+        Don’t have an account? <Link to="/register">Register</Link>
       </p>
     </main>
   );
