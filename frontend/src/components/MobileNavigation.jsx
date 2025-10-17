@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import MobileNavbar from './UI/MobileNavbar';
+import MobileNavbar from './MobileNavbar';
 import './MobileNavigation.css'
 
 export default function MobileNavigation() {

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import hamburgerHandler from '../../lib/hamburger.js';
+import hamburgerHandler from '../lib/hamburger.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { fas } from '@fortawesome/free-solid-svg-icons'
