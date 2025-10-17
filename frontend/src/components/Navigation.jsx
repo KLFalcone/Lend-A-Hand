@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { api } from "../lib/api";        
-import Navbar from "./UI/Navbar";    
+import Navbar from "./Navbar";    
 import "./Navigation.css";
 
 export default function Navigation() {

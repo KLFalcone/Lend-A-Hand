@@ -1,10 +1,12 @@
 import React from "react";
 import { api } from "../lib/api";
+import RequestDetailsModal from "../components/RequestDetailsModal";
 
 export default function Browse() {
   const [items, setItems] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
+  const [selectedId, setSelectedId] = React.useState(null);
 
   React.useEffect(() => {
     let mounted = true;
@@ -34,20 +36,28 @@ export default function Browse() {
   return (
     <main style={{ padding: 16 }}>
       <h2>Browse Requests</h2>
+
       <ul style={{ display: "grid", gap: 12, padding: 0 }}>
         {items.map((r) => {
-          // If displayName exists, show it. Otherwise, show full email.
+          const id = r._id || r.id;
           const author =
             r.createdBy?.displayName?.trim() || r.createdBy?.email || "unknown user";
 
           return (
             <li
-              key={r._id || r.id}
+              key={id}
+              onClick={() => setSelectedId(id)}
+              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelectedId(id)}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open details for ${r.title || "request"}`}
               style={{
                 listStyle: "none",
                 border: "1px solid #333",
                 borderRadius: 8,
                 padding: 12,
+                cursor: "pointer",
+                outline: "none",
               }}
             >
               <strong>{r.title || "Untitled Request"}</strong>
@@ -61,6 +71,13 @@ export default function Browse() {
           );
         })}
       </ul>
+
+      {selectedId && (
+        <RequestDetailsModal
+          requestId={selectedId}
+          onClose={() => setSelectedId(null)}
+        />
+      )}
     </main>
   );
 }
