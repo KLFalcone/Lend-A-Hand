@@ -98,6 +98,9 @@ export const api = {
     }),
   deleteRequest: (id) => apiFetch(`/api/v1/requests/${id}`, { method: 'DELETE' }),
 
+  acceptRequest: (id) =>
+    apiFetch(`/api/v1/requests/${id}/accept`, { method: 'PATCH' }),
+
   // --- notifications ---
   listNotifications: () => apiFetch('/api/v1/notifications'),
   markNotificationRead: (id) =>

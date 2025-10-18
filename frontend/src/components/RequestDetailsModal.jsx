@@ -5,6 +5,7 @@ export default function RequestDetailsModal({ requestId, onClose }) {
   const [req, setReq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [accepting, setAccepting] = useState(false); // new state
   const dialogRef = useRef(null);
 
   useEffect(() => {
@@ -39,6 +40,23 @@ export default function RequestDetailsModal({ requestId, onClose }) {
     el.focus();
     return () => prev && prev.focus && prev.focus();
   }, []);
+
+  // ✅ handle Accept button click
+  async function handleAccept() {
+    if (!requestId) return;
+    try {
+      setAccepting(true);
+      await api.acceptRequest(requestId);
+      alert("✅ Request accepted!");
+      // update local state so it shows new status
+      setReq((prev) => ({ ...prev, status: "accepted" }));
+    } catch (e) {
+      console.error(e);
+      alert("❌ Failed to accept request. You may need to log in.");
+    } finally {
+      setAccepting(false);
+    }
+  }
 
   if (!requestId) return null;
 
@@ -83,8 +101,8 @@ export default function RequestDetailsModal({ requestId, onClose }) {
             <h2 style={{ marginTop: 0 }}>{req?.title || "Request"}</h2>
 
             <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 8 }}>
-              Category: <b>{req?.category || "—"}</b> •
-              {" "}Urgency: <b>{req?.urgency || "—"}</b>
+              Category: <b>{req?.category || "—"}</b> •{" "}
+              Urgency: <b>{req?.urgency || "—"}</b>
             </div>
 
             <p style={{ whiteSpace: "pre-wrap" }}>
@@ -101,7 +119,27 @@ export default function RequestDetailsModal({ requestId, onClose }) {
             </div>
 
             <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-              <button disabled title="Coming soon">Accept</button>
+              {/* Accept now works */}
+              <button
+                onClick={handleAccept}
+                disabled={accepting || req?.status !== "open"}
+                style={{
+                  background: "#007bff",
+                  color: "#fff",
+                  border: "none",
+                  padding: "8px 14px",
+                  borderRadius: 6,
+                  cursor: accepting ? "wait" : "pointer",
+                }}
+              >
+                {accepting
+                  ? "Accepting..."
+                  : req?.status === "open"
+                  ? "Accept"
+                  : "Accepted"}
+              </button>
+
+              {/* other actions still disabled for now */}
               <button disabled title="Coming soon">Message</button>
               <button disabled title="Coming soon">Report</button>
               <button onClick={onClose}>Close</button>

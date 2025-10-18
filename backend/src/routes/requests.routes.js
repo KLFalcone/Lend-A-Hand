@@ -7,5 +7,6 @@ r.get('/', ctrl.list)
 r.post('/', auth, ctrl.create)
 r.get('/:id', ctrl.getOne)
 r.patch('/:id', auth, ctrl.update)
+r.patch('/:id/accept', auth, ctrl.acceptRequest)
 r.delete('/:id', auth, ctrl.remove)
 export default r

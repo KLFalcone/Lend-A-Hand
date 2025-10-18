@@ -28,6 +28,7 @@ const RequestSchema = new mongoose.Schema(
     status: { type: String, enum: ["open", "in_progress", "closed"], default: "open" },
 
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    volunteerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 
     tags: { type: [String], default: [] },
   },

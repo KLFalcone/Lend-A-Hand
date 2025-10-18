@@ -113,3 +113,31 @@ export async function remove(req, res, next) {
     next(e);
   }
 }
+
+// PATCH /api/v1/requests/:id/accept
+export async function acceptRequest(req, res, next) {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const request = await Request.findById(id);
+    if (!request) return res.status(404).json({ message: "Request not found" });
+    if (request.status !== "open") return res.status(400).json({ message: "Request already accepted or closed" });
+
+    request.status = "in_progress";
+    request.volunteer = userId;
+    await request.save();
+
+    // Notify the request creator
+    await createNotification({
+      recipientId: request.createdBy,
+      type: "request_accepted",
+      message: `${req.user.displayName || req.user.email} accepted your request "${request.title}".`,
+    });
+
+    res.json(request);
+  } catch (e) {
+    next(e);
+  }
+}
+

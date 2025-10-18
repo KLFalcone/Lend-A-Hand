@@ -28,7 +28,7 @@ export default function Login() {
       );
 
       // Redirect to profile after short delay
-      setTimeout(() => navigate("/profile"), 800);
+      setTimeout(() => navigate("/browse"), 800);
     } catch (err) {
       console.error("Login error:", err);
       setMessage(`❌ ${err.message || "Login failed."}`);
