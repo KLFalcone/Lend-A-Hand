@@ -4,9 +4,14 @@ import RequestDetailsModal from "../components/RequestDetailsModal";
 
 export default function Browse() {
   const [items, setItems] = React.useState([]);
+  const [filteredItems, setFilteredItems] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
   const [selectedId, setSelectedId] = React.useState(null);
+
+  const [category, setCategory] = React.useState("");
+  const [urgency, setUrgency] = React.useState("");
+  const [distance, setDistance] = React.useState("");
 
   React.useEffect(() => {
     let mounted = true;
@@ -14,7 +19,11 @@ export default function Browse() {
       try {
         setLoading(true);
         const data = await api.listRequests?.(); // GET /api/v1/requests
-        if (mounted) setItems(Array.isArray(data) ? data : []);
+        if (mounted) {
+          const valid = Array.isArray(data) ? data : [];
+          setItems(valid);
+          setFilteredItems(valid);
+        }
       } catch (e) {
         console.error("Browse fetch failed:", e);
         if (mounted) setError("Couldn’t load requests.");
@@ -25,6 +34,32 @@ export default function Browse() {
     return () => { mounted = false; };
   }, []);
 
+  React.useEffect(() => {
+    let result = items;
+
+    if (category) {
+      result = result.filter((r) => r.category?.toLowerCase() === category.toLowerCase());
+    }
+
+    if (urgency) {
+      result = result.filter((r) => r.urgency?.toLowerCase() === urgency.toLowerCase());
+    }
+
+    // TODO: implement the API for the distance filter to work
+    if (distance) {
+      const d = Number(distance);
+      result = result.filter((r) => r.distance <= d);
+    }
+
+    setFilteredItems(result);
+  }, [category, urgency, distance, items]);
+
+  const clearFilters = () => {
+    setCategory("");
+    setUrgency("");
+    setDistance("");
+  };
+
   if (loading) return <main style={{ padding: 16 }}>Loading…</main>;
   if (error)   return <main style={{ padding: 16 }}>{error}</main>;
   if (!items.length) return <main style={{ padding: 16 }}>No requests yet.</main>;
@@ -32,43 +67,108 @@ export default function Browse() {
   return (
     <main style={{ padding: 16 }}>
       <h2>Browse Requests</h2>
+
+      {/* Filter Controls */}
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          flexWrap: "wrap",
+          marginBottom: 16,
+          alignItems: "center",
+        }}
+      >
+        {/* Category Filter */}
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          style={{ padding: "6px 8px" }}
+        >
+          <option value="">All Categories</option>
+          <option value="Errand">Errand</option>
+          <option value="Yardwork">Yardwork</option>
+          <option value="Pet Care">Pet Care</option>
+          <option value="Tutoring">Tutoring</option>
+          <option value="Household">Household</option>
+          <option value="Other">Other</option>
+        </select>
+
+        {/* Urgency Filter */}
+        <select
+          value={urgency}
+          onChange={(e) => setUrgency(e.target.value)}
+          style={{ padding: "6px 8px" }}
+        >
+          <option value="">All Urgencies</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+
+        {/* Distance Filter */}
+        <select
+          value={distance}
+          onChange={(e) => setDistance(e.target.value)}
+          style={{ padding: "6px 8px" }}
+        >
+          <option value="">Any Distance</option>
+          <option value="5">Within 5 mi</option>
+          <option value="10">Within 10 mi</option>
+          <option value="25">Within 25 mi</option>
+        </select>
+
+        <button onClick={clearFilters} style={{ padding: "6px 12px" }}>
+          Clear All
+        </button>
+      </div>
+
+      {/* Request List */}
       <ul style={{ display: "grid", gap: 12, padding: 0 }}>
-        {items.map((r) => {
-          const author =
-            r?.createdBy?.displayName?.trim() ||
-            r?.createdBy?.email ||
-            r?.author?.displayName?.trim() ||
-            r?.author?.email ||
-            r?.email ||
-            "No user info";
+        {filteredItems.length === 0 ? (
+          <div>No requests match your filters.</div>
+        ) : (
+          filteredItems.map((r) => {
+            const author =
+              r?.createdBy?.displayName?.trim() ||
+              r?.createdBy?.email ||
+              r?.author?.displayName?.trim() ||
+              r?.author?.email ||
+              r?.email ||
+              "No user info";
 
-          const id = r._id || r.id;
+            const id = r._id || r.id;
 
-          return (
-            <li
-              key={id}
-              onClick={() => setSelectedId(id)}
-              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelectedId(id)}
-              role="button"
-              tabIndex={0}
-              style={{
-                listStyle: "none",
-                border: "1px solid #333",
-                borderRadius: 8,
-                padding: 12,
-                cursor: "pointer",
-              }}
-            >
-              <strong>{r.title || "Untitled Request"}</strong>
-              <div style={{ opacity: 0.8 }}>{r.description || "No description provided."}</div>
-              <div style={{ fontSize: 12, opacity: 0.6 }}>posted by {author}</div>
-            </li>
-          );
-        })}
+            return (
+              <li
+                key={id}
+                onClick={() => setSelectedId(id)}
+                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelectedId(id)}
+                role="button"
+                tabIndex={0}
+                style={{
+                  listStyle: "none",
+                  border: "1px solid #333",
+                  borderRadius: 8,
+                  padding: 12,
+                  cursor: "pointer",
+                }}
+              >
+                <strong>{r.title || "Untitled Request"}</strong>
+                <div style={{ opacity: 0.8 }}>
+                  {r.description || "No description provided."}
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.6 }}>posted by {author}</div>
+              </li>
+            );
+          })
+        )}
       </ul>
 
       {selectedId && (
-        <RequestDetailsModal requestId={selectedId} onClose={() => setSelectedId(null)} />
+        <RequestDetailsModal
+          requestId={selectedId}
+          onClose={() => setSelectedId(null)}
+        />
       )}
     </main>
   );
