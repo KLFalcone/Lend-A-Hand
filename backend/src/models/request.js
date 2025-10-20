@@ -25,7 +25,10 @@ const RequestSchema = new mongoose.Schema(
       },
     },
 
-    status: { type: String, enum: ["open", "in_progress", "closed"], default: "open" },
+    status: { type: String, enum: ["open", "in_progress", "pending_confirmation", "closed"], default: "open" },
+
+    completedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // volunteer who marked complete
+    completedAt: { type: Date }, // timestamp when requester confirms 
 
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     volunteerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

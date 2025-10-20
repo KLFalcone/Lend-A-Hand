@@ -165,10 +165,7 @@ export default function Browse() {
       </ul>
 
       {selectedId && (
-        <RequestDetailsModal
-          requestId={selectedId}
-          onClose={() => setSelectedId(null)}
-        />
+        <RequestDetailsModal requestId={selectedId} onClose={() => setSelectedId(null)} />
       )}
     </main>
   );

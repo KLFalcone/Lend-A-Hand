@@ -114,6 +114,32 @@ export async function remove(req, res, next) {
   }
 }
 
+// PATCH /requests/:id/complete
+export async function markComplete(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const request = await Request.findById(id).populate("createdBy", "displayName email");
+    if (!request) return res.status(404).json({ message: "Request not found" });
+
+    // Only allow volunteers to mark complete (not the requester)
+    if (req.user._id.toString() === request.createdBy._id.toString()) {
+      return res.status(403).json({ message: "Requester cannot mark their own request complete" });
+    }
+
+    if (request.status === "closed") {
+      return res.status(400).json({ message: "Request already closed" });
+    }
+
+    request.status = "pending_confirmation";
+    request.completedBy = req.user._id;
+    await request.save();
+
+    // notify requester
+    await createNotification({
+      recipientId: request.createdBy._id,
+      type: "request_pending_confirmation",
+      message: `${req.user.displayName || req.user.email} marked your request "${request.title}" as complete. Please confirm.`,
 // PATCH /api/v1/requests/:id/accept
 export async function acceptRequest(req, res, next) {
   try {
@@ -141,3 +167,38 @@ export async function acceptRequest(req, res, next) {
   }
 }
 
+// PATCH /requests/:id/confirm
+export async function confirmCompletion(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const request = await Request.findById(id).populate("createdBy", "displayName email");
+    if (!request) return res.status(404).json({ message: "Request not found" });
+
+    // Only requester can confirm
+    if (req.user._id.toString() !== request.createdBy._id.toString()) {
+      return res.status(403).json({ message: "Only the requester can confirm completion" });
+    }
+
+    if (request.status !== "pending_confirmation") {
+      return res.status(400).json({ message: "Request is not pending confirmation" });
+    }
+
+    request.status = "closed";
+    request.completedAt = new Date();
+    await request.save();
+
+    // notify volunteer
+    if (request.completedBy) {
+      await createNotification({
+        recipientId: request.completedBy,
+        type: "request_closed",
+        message: `${req.user.displayName || req.user.email} confirmed completion of "${request.title}".`,
+      });
+    }
+
+    res.json(request);
+  } catch (e) {
+    next(e);
+  }
+}
