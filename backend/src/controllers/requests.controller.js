@@ -1,5 +1,6 @@
 import Request from "../models/request.js";
 import { createNotification } from "./notifications.controller.js";
+
 // GET /api/v1/requests
 // Supports simple filters: ?status=open&tag=yard
 export async function list(req, res, next) {
@@ -8,60 +9,64 @@ export async function list(req, res, next) {
     const query = {};
     if (status) query.status = status;
     if (tag) query.tags = tag;
+
     const items = await Request.find(query)
       .sort({ createdAt: -1 })
-      .populate("createdBy", "displayName email"); // show creator name/email
+      .populate("createdBy", "displayName email")
+      .populate("acceptedBy", "displayName email");
     res.json(items);
   } catch (e) {
     next(e);
   }
 }
+
 // POST /api/v1/requests (auth required)
-// Creates a request owned by the logged-in user
 export async function create(req, res, next) {
   try {
     const doc = await Request.create({
       ...req.body,
-      createdBy: req.user?._id, // set owner to current user
+      createdBy: req.user?._id, // requester
     });
     res.status(201).json(doc);
   } catch (e) {
     next(e);
   }
 }
+
 // GET /api/v1/requests/:id
 export async function getOne(req, res, next) {
   try {
     const doc = await Request.findById(req.params.id)
-      .populate("createdBy", "displayName email");
+      .populate("createdBy", "displayName email")
+      .populate("acceptedBy", "displayName email");
     if (!doc) return res.status(404).json({ message: "not found" });
     res.json(doc);
   } catch (e) {
     next(e);
   }
 }
+
 // PATCH /api/v1/requests/:id (auth required)
 export async function update(req, res, next) {
   try {
     const { id } = req.params;
-    // never allow changing ownership via API
     if ("createdBy" in req.body) delete req.body.createdBy;
-    // read current values so we can compare after update (for notifications)
+
     const before = await Request.findById(id).select("status title createdBy");
     if (!before) return res.status(404).json({ message: "not found" });
-    const doc = await Request.findByIdAndUpdate(
-      id,
-      req.body,
-      { new: true, runValidators: true }
-    ).populate("createdBy", "displayName email");
+
+    const doc = await Request.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    }).populate("createdBy", "displayName email");
+
     // Fire-and-forget notifications when status changes
     try {
       const newStatus = req.body?.status;
       const changed = newStatus && newStatus !== before.status;
       const recipientId = before.createdBy;
-      // don't notify if we can't determine a recipient
+
       if (changed && recipientId) {
-        // optional: don't notify user about their own action
         const isSelf = req.user?._id?.toString() === recipientId.toString();
         if (!isSelf) {
           const actor = req.user?.displayName || req.user?.email || "Someone";
@@ -81,14 +86,15 @@ export async function update(req, res, next) {
         }
       }
     } catch (e) {
-      // never block the main flow on notify errors
       console.error("notify on request update failed:", e?.message);
     }
+
     res.json(doc);
   } catch (e) {
     next(e);
   }
 }
+
 // DELETE /api/v1/requests/:id (auth required)
 export async function remove(req, res, next) {
   try {
@@ -108,10 +114,17 @@ export async function acceptRequest(req, res, next) {
 
     const request = await Request.findById(id);
     if (!request) return res.status(404).json({ message: "Request not found" });
-    if (request.status !== "open") return res.status(400).json({ message: "Request already accepted or closed" });
+
+    if (request.status !== "open" && request.acceptedBy) {
+      return res.status(400).json({ message: "Request already accepted or closed" });
+    }
+
+    if (String(request.createdBy) === String(userId)) {
+      return res.status(400).json({ message: "You cannot accept your own request" });
+    }
 
     request.status = "in_progress";
-    request.volunteer = userId;
+    request.acceptedBy = userId;
     await request.save();
 
     // Notify the request creator
@@ -126,7 +139,8 @@ export async function acceptRequest(req, res, next) {
     next(e);
   }
 }
-  // PATCH /requests/:id/complete
+
+// PATCH /requests/:id/complete
 export async function markComplete(req, res, next) {
   try {
     const { id } = req.params;
@@ -134,7 +148,6 @@ export async function markComplete(req, res, next) {
     const request = await Request.findById(id).populate("createdBy", "displayName email");
     if (!request) return res.status(404).json({ message: "Request not found" });
 
-    // Only allow volunteers to mark complete (not the requester)
     if (req.user._id.toString() === request.createdBy._id.toString()) {
       return res.status(403).json({ message: "Requester cannot mark their own request complete" });
     }
@@ -168,7 +181,6 @@ export async function confirmCompletion(req, res, next) {
     const request = await Request.findById(id).populate("createdBy", "displayName email");
     if (!request) return res.status(404).json({ message: "Request not found" });
 
-    // Only requester can confirm
     if (req.user._id.toString() !== request.createdBy._id.toString()) {
       return res.status(403).json({ message: "Only the requester can confirm completion" });
     }
@@ -181,7 +193,7 @@ export async function confirmCompletion(req, res, next) {
     request.completedAt = new Date();
     await request.save();
 
-    // notify volunteer
+    // notify helper (acceptedBy)
     if (request.completedBy) {
       await createNotification({
         recipientId: request.completedBy,

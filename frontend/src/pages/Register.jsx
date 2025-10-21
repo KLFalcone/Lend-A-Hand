@@ -14,11 +14,41 @@ export default function Register() {
     setMessage("");
 
     try {
-      // send displayName along with email + password
-      await api.register(email.trim(), password, displayName.trim());
+      // --- register new user ---
+      const { user } = await api.register(
+        email.trim(),
+        password,
+        displayName.trim()
+      );
 
-      setMessage("✅ Registration successful! Redirecting to login...");
-      setTimeout(() => navigate("/login"), 1000);
+      // immediately log them in after registering
+      const { user: loggedInUser } = await api.login(email, password);
+
+      // save basics for navbar/local UI
+      localStorage.setItem("userEmail", loggedInUser.email);
+      localStorage.setItem("displayName", loggedInUser.displayName || "");
+      localStorage.setItem("role", loggedInUser.role || "user");
+      localStorage.setItem("displayName", user.displayName || "");
+      window.dispatchEvent(new Event("auth-changed")); // ping header
+      
+      // fetch full profile to check if address is missing
+      const { user: fullUser } = await api.me();
+      const needsOnboarding = !fullUser.address?.trim();
+
+      setMessage(
+        `✅ Registration successful! Welcome ${
+          fullUser.displayName || fullUser.email.split("@")[0]
+        }`
+      );
+
+      // redirect accordingly
+      setTimeout(() => {
+        if (needsOnboarding) {
+          navigate("/profile?onboard=1");
+        } else {
+          navigate("/browse");
+        }
+      }, 800);
     } catch (err) {
       console.error("Register error:", err);
       setMessage(`❌ ${err.message || "Registration failed."}`);
@@ -58,7 +88,7 @@ export default function Register() {
         <button type="submit">Register</button>
       </form>
 
-      {message && <p>{message}</p>}
+      {message && <p style={{ marginTop: 10 }}>{message}</p>}
     </main>
   );
 }

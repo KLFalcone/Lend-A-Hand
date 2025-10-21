@@ -5,6 +5,7 @@ import requests from './requests.routes.js'
 import users from './user.routes.js' 
 import auth from './auth.routes.js'
 import notifications from "./notifications.routes.js";
+import meRoutes from "./me.routes.js";
 
 const r = Router()
 r.use('/health', health)
@@ -12,5 +13,6 @@ r.use('/auth', auth)
 r.use('/requests', requests)
 r.use('/users', users)
 r.use("/notifications", notifications);
+r.use("/me", meRoutes);
 
 export default r

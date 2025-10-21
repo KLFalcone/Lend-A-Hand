@@ -13,22 +13,34 @@ export default function Login() {
     setMessage("");
 
     try {
-      // login request
-      const { user } = await api.login(email, password); // fix: destructure { user }
+      // --- login request ---
+      const { user } = await api.login(email, password);
 
-      // optionally persist basic info (frontend-only session)
+      // store basics for navbar/local UI
       localStorage.setItem("userEmail", user.email);
       localStorage.setItem("displayName", user.displayName || "");
       localStorage.setItem("role", user.role || "user");
+      localStorage.setItem("displayName", user.displayName || "");
+      window.dispatchEvent(new Event("auth-changed")); // ping header
+
+      // check if user needs onboarding
+      const { user: fullUser } = await api.me(); // ensures latest data
+      const needsOnboarding = !fullUser.address?.trim();
 
       setMessage(
         `✅ Login successful! Welcome ${
-          user.displayName || user.email.split("@")[0]
-        }.`
+          fullUser.displayName || fullUser.email.split("@")[0]
+        }`
       );
 
-      // Redirect to profile after short delay
-      setTimeout(() => navigate("/browse"), 800);
+      // redirect based on profile completeness
+      setTimeout(() => {
+        if (needsOnboarding) {
+          navigate("/profile?onboard=1");
+        } else {
+          navigate("/browse");
+        }
+      }, 800);
     } catch (err) {
       console.error("Login error:", err);
       setMessage(`❌ ${err.message || "Login failed."}`);
@@ -60,9 +72,9 @@ export default function Login() {
         <button type="submit">Login</button>
       </form>
 
-      {message && <p>{message}</p>}
+      {message && <p style={{ marginTop: 10 }}>{message}</p>}
 
-      <p>
+      <p style={{ marginTop: 16 }}>
         Don’t have an account? <Link to="/register">Register</Link>
       </p>
     </main>

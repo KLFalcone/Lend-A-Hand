@@ -80,6 +80,9 @@ export const api = {
     }),
   listUsers: () => apiFetch('/api/v1/users'),
 
+  // --- me / overview ---
+  meOverview: () => apiFetch('/api/v1/me/overview'),
+
   // --- requests ---
   listRequests: (params = {}) => {
     const qs = new URLSearchParams(params).toString();

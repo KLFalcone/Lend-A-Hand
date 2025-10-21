@@ -9,6 +9,7 @@ import PostRequest from './pages/PostRequest.jsx'
 import Register from './pages/Register.jsx'
 import Login from './pages/Login.jsx'
 import Profile from './pages/Profile.jsx';
+import SpecificPost from "./pages/SpecificPost.jsx";
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,9 @@ const router = createBrowserRouter([
         path: "/browse",
         element: <Browse />
       },
+      { 
+        path: "browse/posts/:id", 
+        element: <SpecificPost /> },
       {
         path: "/post",
         element: <PostRequest />
