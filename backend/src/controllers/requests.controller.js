@@ -1,5 +1,6 @@
 import Request from "../models/request.js";
 import { createNotification } from "./notifications.controller.js";
+import { sendEmail } from '../services/emailService.js';
 
 // GET /api/v1/requests
 // Supports simple filters: ?status=open&tag=yard
@@ -134,6 +135,16 @@ export async function acceptRequest(req, res, next) {
       message: `${req.user.displayName || req.user.email} accepted your request "${request.title}".`,
     });
 
+    // Trigger email notification to accepter on request accept
+    const accepter_subject = 'You just accepted a request';
+    const accepter_body = 'Hi ${req.user.displayName} you just accepted request ${request.title}';
+    await sendEmail(req.user.email, accepter_subject, accepter_body);
+
+    // Trigger email notification to the request creator that their request has been accepted.
+    const subject = 'Your request was just accepted.';
+    const body = 'Hi ${request.createdBy.displayName} your request was just accepted by ${req.user.displayName}';
+    await sendEmail(req.user.email, subject, body);
+
     res.json(request);
   } catch (e) {
     next(e);
@@ -166,6 +177,11 @@ export async function markComplete(req, res, next) {
       type: "request_pending_confirmation",
       message: `${req.user.displayName || req.user.email} marked your request "${request.title}" as complete. Please confirm.`,
     });
+
+    // Trigger email notification to requester on request complete
+    const subject = 'Your request was just completed';
+    const body = 'Hi ${req.user.displayName} your request was just completed';
+    await sendEmail(request.createdBy.email, subject, body);
 
     res.json(request);
   } catch (e) {
