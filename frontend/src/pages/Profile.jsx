@@ -11,6 +11,8 @@ export default function Profile() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // activity state
   const [overview, setOverview] = useState(null);
@@ -99,7 +101,25 @@ export default function Profile() {
     }
   };
 
-  if (loading) return <p style={{ padding: 16 }}>Loading profile...</p>;
+    const handleDeleteAccount = async () => {
+        setDeleting(true);
+        try {
+            await api.deleteMe(); // DELETE /api/v1/users/me
+            // Clear any stored auth data
+            localStorage.removeItem('token');
+            localStorage.removeItem('displayName');
+            // Redirect to homepage with success message
+            navigate('/', { state: { message: 'Account deleted successfully' } });
+        } catch (err) {
+            setMessage(`${err.message || 'Failed to delete account.'}`);
+            setShowDeleteModal(false);
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+
+    if (loading) return <p style={{ padding: 16 }}>Loading profile...</p>;
   if (!profile) return <p style={{ padding: 16 }}>No profile data found.</p>;
 
   // tiny UI helpers
@@ -158,6 +178,74 @@ export default function Profile() {
     const style = { ...styles.base, ...(styles[s] || {}) };
     return <span style={style}>{s.replace("_", " ")}</span>;
   };
+    // Delete modal
+    const DeleteConfirmModal = () => {
+        if (!showDeleteModal) return null;
+
+        return (
+            <div
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                }}
+                onClick={() => setShowDeleteModal(false)}
+            >
+                <div
+                    style={{
+                        background: '#fff',
+                        borderRadius: 12,
+                        padding: 24,
+                        maxWidth: 400,
+                        width: '90%',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <h3 style={{ margin: '0 0 12px', color: '#dc2626' }}>
+                        Delete Account?
+                    </h3>
+                    <p style={{ margin: '0 0 20px', color: '#667085' }}>
+                        This action cannot be undone. This will permanently delete your account
+                        and remove all your requests from our servers.
+                    </p>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button
+                            type="button"
+                            onClick={() => setShowDeleteModal(false)}
+                            disabled={deleting}
+                            style={{
+                                background: '#fff',
+                                color: '#344054',
+                                border: '1px solid #d0d5dd',
+                            }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleDeleteAccount}
+                            disabled={deleting}
+                            style={{
+                                background: '#dc2626',
+                                color: '#fff',
+                                border: 'none',
+                            }}
+                        >
+                            {deleting ? 'Deleting…' : 'Delete Account'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
   return (
     <main style={{ padding: 16, maxWidth: 960, margin: "0 auto" }}>
@@ -198,6 +286,21 @@ export default function Profile() {
                 </p>
               )}
               <button onClick={() => setEditing(true)}>Edit Profile</button>
+                <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid #e5e7eb' }}>
+                    <p style={{ fontSize: 14, color: '#667085', marginBottom: 8 }}>
+                        Danger Zone
+                    </p>
+                    <button
+                        onClick={() => setShowDeleteModal(true)}
+                        style={{
+                            background: '#fff',
+                            color: '#dc2626',
+                            border: '1px solid #dc2626',
+                        }}
+                    >
+                        Delete Account
+                    </button>
+                </div>
               {message && <p style={{ marginTop: 8 }}>{message}</p>}
             </div>
           ) : (
@@ -317,6 +420,7 @@ export default function Profile() {
           </Card>
         </div>
       </div>
+        <DeleteConfirmModal />
     </main>
   );
 }
