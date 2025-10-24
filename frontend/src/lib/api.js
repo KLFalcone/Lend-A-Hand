@@ -78,6 +78,7 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(payload), // { displayName, address, phone, availability, profilePic }
     }),
+  deleteMe: () => apiFetch('/api/v1/users/me', { method: 'DELETE' }),
   listUsers: () => apiFetch('/api/v1/users'),
 
   // --- me / overview ---
