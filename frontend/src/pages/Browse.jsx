@@ -12,6 +12,7 @@ export default function Browse() {
   const [category, setCategory] = React.useState("");
   const [urgency, setUrgency] = React.useState("");
   const [distance, setDistance] = React.useState("");
+  const [status, setStatus] = React.useState("");
 
   React.useEffect(() => {
     let mounted = true;
@@ -45,6 +46,10 @@ export default function Browse() {
       result = result.filter((r) => r.urgency?.toLowerCase() === urgency.toLowerCase());
     }
 
+      if (status) {
+          result = result.filter((r) => r.status?.toLowerCase() === status.toLowerCase());
+      }
+
     // TODO: implement the API for the distance filter to work
     if (distance) {
       const d = Number(distance);
@@ -52,13 +57,46 @@ export default function Browse() {
     }
 
     setFilteredItems(result);
-  }, [category, urgency, distance, items]);
+  }, [category, urgency, status, distance, items]);
 
   const clearFilters = () => {
     setCategory("");
     setUrgency("");
     setDistance("");
+    setStatus("");
   };
+
+    const StatusBadge = ({ status }) => {
+        const s = String(status || "open").toLowerCase();
+        const styles = {
+            base: {
+                fontSize: 12,
+                borderRadius: 999,
+                padding: "4px 10px",
+                fontWeight: 500,
+                display: "inline-block",
+                textTransform: "capitalize",
+            },
+            open: {
+                background: "#dbeafe",
+                color: "#1e40af"
+            },
+            in_progress: {
+                background: "#d1fae5",
+                color: "#065f46"
+            },
+            pending_confirmation: {
+                background: "#fef3c7",
+                color: "#92400e"
+            },
+            closed: {
+                background: "#fee2e2",
+                color: "#991b1b"
+            },
+        };
+        const style = { ...styles.base, ...(styles[s] || styles.open) };
+        return <span style={style}>{s.replace("_", " ")}</span>;
+    };
 
   if (loading) return <main style={{ padding: 16 }}>Loading…</main>;
   if (error)   return <main style={{ padding: 16 }}>{error}</main>;
@@ -104,6 +142,19 @@ export default function Browse() {
           <option value="medium">Medium</option>
           <option value="high">High</option>
         </select>
+
+          {/* Status Filter */}
+          <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              style={{ padding: "6px 8px" }}
+          >
+              <option value="">All Statuses</option>
+              <option value="open">Open</option>
+              <option value="in_progress">In Progress</option>
+              <option value="pending_confirmation">Pending Confirmation</option>
+              <option value="closed">Closed</option>
+          </select>
 
         {/* Distance Filter */}
         <select
@@ -154,6 +205,7 @@ export default function Browse() {
                 }}
               >
                 <strong>{r.title || "Untitled Request"}</strong>
+                  <StatusBadge status={r.status} />
                 <div style={{ opacity: 0.8 }}>
                   {r.description || "No description provided."}
                 </div>
