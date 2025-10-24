@@ -233,3 +233,50 @@ export async function confirmCompletion(req, res, next) {
     next(e);
   }
 }
+
+// PATCH /requests/:id/cancel
+export async function cancelAcceptance(req, res, next) {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const request = await Request.findById(id)
+      .populate("createdBy", "displayName email")
+      .populate("acceptedBy", "displayName email");
+
+    if (!request) return res.status(404).json({ message: "Request not found" });
+
+    // Only the volunteer who accepted it can cancel
+    if (!request.acceptedBy || request.acceptedBy._id.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "You cannot cancel this request" });
+    }
+
+    // Only cancel if it’s still in progress
+    if (request.status !== "in_progress") {
+      return res.status(400).json({ message: "Cannot cancel a request that is not in progress" });
+    }
+
+    request.acceptedBy = undefined;
+    request.status = "open";
+    await request.save();
+
+    // notify requester
+    await createNotification({
+      recipientId: request.createdBy._id,
+      type: "request_canceled",
+      message: `${req.user.displayName || req.user.email} canceled helping with "${request.title}". It's open again.`,
+    });
+
+    // optional: email requester
+    await sendEmail({
+      to: request.createdBy.email,
+      subject: "Helper canceled your request",
+      body: `Your request "${request.title}" is now open again because ${req.user.displayName || req.user.email} canceled.`,
+    });
+
+    res.json(request);
+  } catch (e) {
+    next(e);
+  }
+}
+
