@@ -137,13 +137,23 @@ export async function acceptRequest(req, res, next) {
 
     // Trigger email notification to accepter on request accept
     const accepter_subject = 'You just accepted a request';
-    const accepter_body = 'Hi ${req.user.displayName} you just accepted request ${request.title}';
-    await sendEmail(req.user.email, accepter_subject, accepter_body);
+    const accepter_body = `Hi ${req.user.displayName} you just accepted request ${request.title}`;
+    await sendEmail({
+      to: req.user.email,
+      subject: accepter_subject,
+      body: accepter_body,
+  });
 
     // Trigger email notification to the request creator that their request has been accepted.
+    const requestCreator = await Request.findById(id).populate('createdBy');
+    const creatorEmail = requestCreator.createdBy.email;
     const subject = 'Your request was just accepted.';
-    const body = 'Hi ${request.createdBy.displayName} your request was just accepted by ${req.user.displayName}';
-    await sendEmail(req.user.email, subject, body);
+    const body = `Hi ${requestCreator.createdBy.displayName} your request was just accepted by ${req.user.displayName}`;
+    await sendEmail({
+      to: creatorEmail,
+      subject: subject,
+      body: body,
+  });
 
     res.json(request);
   } catch (e) {
