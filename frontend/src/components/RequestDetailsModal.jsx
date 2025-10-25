@@ -5,7 +5,7 @@ export default function RequestDetailsModal({ requestId, onClose }) {
   const [req, setReq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [accepting, setAccepting] = useState(false); // new state
   const dialogRef = useRef(null);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function RequestDetailsModal({ requestId, onClose }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // focus modal
+  // focus the modal when it opens
   useEffect(() => {
     const el = dialogRef.current;
     if (!el) return;
@@ -41,77 +41,24 @@ export default function RequestDetailsModal({ requestId, onClose }) {
     return () => prev && prev.focus && prev.focus();
   }, []);
 
-  // --- button actions ---
+  // ✅ handle Accept button click
   async function handleAccept() {
     if (!requestId) return;
     try {
-      setBusy(true);
+      setAccepting(true);
       await api.acceptRequest(requestId);
       alert("✅ Request accepted!");
-      setReq((prev) => ({ ...prev, status: "in_progress" }));
+      // update local state so it shows new status
+      setReq((prev) => ({ ...prev, status: "accepted" }));
     } catch (e) {
       console.error(e);
       alert("❌ Failed to accept request. You may need to log in.");
     } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleCancel() {
-    if (!requestId) return;
-    if (!window.confirm("Cancel your acceptance of this request?")) return;
-    try {
-      setBusy(true);
-      await api.cancelAcceptance(requestId);
-      alert("❎ Request cancelled.");
-      setReq((prev) => ({ ...prev, status: "open" }));
-    } catch (e) {
-      console.error(e);
-      alert("❌ Failed to cancel request.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleMarkComplete() {
-    if (!requestId) return;
-    try {
-      setBusy(true);
-      await api.markComplete(requestId);
-      alert("✅ Marked as complete! Awaiting requester confirmation.");
-      setReq((prev) => ({ ...prev, status: "pending_confirmation" }));
-    } catch (e) {
-      console.error(e);
-      alert("❌ Failed to mark complete. You may not be authorized.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleConfirmCompletion() {
-    if (!requestId) return;
-    try {
-      setBusy(true);
-      await api.confirmCompletion(requestId);
-      alert("🎉 Request confirmed and closed!");
-      setReq((prev) => ({ ...prev, status: "closed" }));
-    } catch (e) {
-      console.error(e);
-      alert("❌ Failed to confirm completion.");
-    } finally {
-      setBusy(false);
+      setAccepting(false);
     }
   }
 
   if (!requestId) return null;
-
-  const status = req?.status || "open";
-
-  // dynamic button visibility
-  const showAccept = status === "open";
-  const showCancel = status === "in_progress";
-  const showMarkComplete = status === "in_progress";
-  const showConfirm = status === "pending_confirmation";
 
   return (
     <div
@@ -168,78 +115,33 @@ export default function RequestDetailsModal({ requestId, onClose }) {
                 <b>Posted by:</b>{" "}
                 {req?.createdBy?.displayName || req?.createdBy?.email || "—"}
               </div>
-              <div><b>Status:</b> {status}</div>
+              <div><b>Status:</b> {req?.status || "open"}</div>
             </div>
 
-            <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {showAccept && (
-                <button
-                  onClick={handleAccept}
-                  disabled={busy}
-                  style={{
-                    background: "#007bff",
-                    color: "#fff",
-                    border: "none",
-                    padding: "8px 14px",
-                    borderRadius: 6,
-                    cursor: busy ? "wait" : "pointer",
-                  }}
-                >
-                  Accept
-                </button>
-              )}
+            <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+              {/* Accept now works */}
+              <button
+                onClick={handleAccept}
+                disabled={accepting || req?.status !== "open"}
+                style={{
+                  background: "#007bff",
+                  color: "#fff",
+                  border: "none",
+                  padding: "8px 14px",
+                  borderRadius: 6,
+                  cursor: accepting ? "wait" : "pointer",
+                }}
+              >
+                {accepting
+                  ? "Accepting..."
+                  : req?.status === "open"
+                  ? "Accept"
+                  : "Accepted"}
+              </button>
 
-              {showCancel && (
-                <button
-                  onClick={handleCancel}
-                  disabled={busy}
-                  style={{
-                    background: "#dc3545",
-                    color: "#fff",
-                    border: "none",
-                    padding: "8px 14px",
-                    borderRadius: 6,
-                    cursor: busy ? "wait" : "pointer",
-                  }}
-                >
-                  Cancel
-                </button>
-              )}
-
-              {showMarkComplete && (
-                <button
-                  onClick={handleMarkComplete}
-                  disabled={busy}
-                  style={{
-                    background: "#28a745",
-                    color: "#fff",
-                    border: "none",
-                    padding: "8px 14px",
-                    borderRadius: 6,
-                    cursor: busy ? "wait" : "pointer",
-                  }}
-                >
-                  Mark Complete
-                </button>
-              )}
-
-              {showConfirm && (
-                <button
-                  onClick={handleConfirmCompletion}
-                  disabled={busy}
-                  style={{
-                    background: "#17a2b8",
-                    color: "#fff",
-                    border: "none",
-                    padding: "8px 14px",
-                    borderRadius: 6,
-                    cursor: busy ? "wait" : "pointer",
-                  }}
-                >
-                  Confirm Completion
-                </button>
-              )}
-
+              {/* other actions still disabled for now */}
+              <button disabled title="Coming soon">Message</button>
+              <button disabled title="Coming soon">Report</button>
               <button onClick={onClose}>Close</button>
             </div>
           </>
