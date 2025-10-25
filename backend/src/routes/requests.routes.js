@@ -10,6 +10,5 @@ r.patch('/:id', auth, ctrl.update)
 r.patch('/:id/accept', auth, ctrl.acceptRequest)
 r.patch('/:id/complete', auth, ctrl.markComplete);      // volunteer marks complete
 r.patch('/:id/confirm', auth, ctrl.confirmCompletion);  // requester confirms completion
-r.patch('/:id/cancel', auth, ctrl.cancelAcceptance);    // volunteer marks as cancelled
 r.delete('/:id', auth, ctrl.remove)
 export default r

@@ -34,7 +34,7 @@ export async function apiFetch(path, options = {}) {
     let data = null;
 
     if (res.status === 204) {
-      data = null;
+      data = null; // No Content
     } else if (ct.includes('application/json')) {
       data = await res.json();
     } else {
@@ -102,17 +102,8 @@ export const api = {
     }),
   deleteRequest: (id) => apiFetch(`/api/v1/requests/${id}`, { method: 'DELETE' }),
 
-  acceptRequest: (id) => apiFetch(`/api/v1/requests/${id}/accept`, { method: 'PATCH' }),
-
-  cancelAcceptance: (id) =>
-    apiFetch(`/api/v1/requests/${id}/cancel`, { method: 'PATCH' }),
-
-  // ✅ NEW ENDPOINTS for completion workflow
-  markComplete: (id) =>
-    apiFetch(`/api/v1/requests/${id}/complete`, { method: 'PATCH' }),
-
-  confirmCompletion: (id) =>
-    apiFetch(`/api/v1/requests/${id}/confirm`, { method: 'PATCH' }),
+  acceptRequest: (id) =>
+    apiFetch(`/api/v1/requests/${id}/accept`, { method: 'PATCH' }),
 
   // --- notifications ---
   listNotifications: () => apiFetch('/api/v1/notifications'),
