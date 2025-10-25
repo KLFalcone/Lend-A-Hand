@@ -8,6 +8,7 @@ export default function Browse() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
   const [selectedId, setSelectedId] = React.useState(null);
+  const [currentUser, setCurrentUser] = React.useState(null);
 
   const [category, setCategory] = React.useState("");
   const [urgency, setUrgency] = React.useState("");
@@ -19,11 +20,18 @@ export default function Browse() {
     (async () => {
       try {
         setLoading(true);
-        const data = await api.listRequests?.(); // GET /api/v1/requests
+
+        // Fetch both requests and current user info
+        const [reqs, user] = await Promise.all([
+          api.listRequests?.(),
+          api.getCurrentUser?.().catch(() => null),
+        ]);
+
         if (mounted) {
-          const valid = Array.isArray(data) ? data : [];
+          const valid = Array.isArray(reqs) ? reqs : [];
           setItems(valid);
           setFilteredItems(valid);
+          setCurrentUser(user || null);
         }
       } catch (e) {
         console.error("Browse fetch failed:", e);
@@ -32,96 +40,32 @@ export default function Browse() {
         if (mounted) setLoading(false);
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   React.useEffect(() => {
-    let result = items;
+    let filtered = [...items];
+    if (category) filtered = filtered.filter((r) => r.category === category);
+    if (urgency) filtered = filtered.filter((r) => r.urgency === urgency);
+    if (distance) filtered = filtered.filter((r) => r.distance <= Number(distance));
+    if (status) filtered = filtered.filter((r) => r.status === status);
+    setFilteredItems(filtered);
+  }, [category, urgency, distance, status, items]);
 
-    if (category) {
-      result = result.filter((r) => r.category?.toLowerCase() === category.toLowerCase());
-    }
+  const openDetails = (id) => setSelectedId(id);
+  const closeDetails = () => setSelectedId(null);
 
-    if (urgency) {
-      result = result.filter((r) => r.urgency?.toLowerCase() === urgency.toLowerCase());
-    }
-
-      if (status) {
-          result = result.filter((r) => r.status?.toLowerCase() === status.toLowerCase());
-      }
-
-    // TODO: implement the API for the distance filter to work
-    if (distance) {
-      const d = Number(distance);
-      result = result.filter((r) => r.distance <= d);
-    }
-
-    setFilteredItems(result);
-  }, [category, urgency, status, distance, items]);
-
-  const clearFilters = () => {
-    setCategory("");
-    setUrgency("");
-    setDistance("");
-    setStatus("");
-  };
-
-    const StatusBadge = ({ status }) => {
-        const s = String(status || "open").toLowerCase();
-        const styles = {
-            base: {
-                fontSize: 12,
-                borderRadius: 999,
-                padding: "4px 10px",
-                fontWeight: 500,
-                display: "inline-block",
-                textTransform: "capitalize",
-            },
-            open: {
-                background: "#dbeafe",
-                color: "#1e40af"
-            },
-            in_progress: {
-                background: "#d1fae5",
-                color: "#065f46"
-            },
-            pending_confirmation: {
-                background: "#fef3c7",
-                color: "#92400e"
-            },
-            closed: {
-                background: "#fee2e2",
-                color: "#991b1b"
-            },
-        };
-        const style = { ...styles.base, ...(styles[s] || styles.open) };
-        return <span style={style}>{s.replace("_", " ")}</span>;
-    };
-
-  if (loading) return <main style={{ padding: 16 }}>Loading…</main>;
-  if (error)   return <main style={{ padding: 16 }}>{error}</main>;
-  if (!items.length) return <main style={{ padding: 16 }}>No requests yet.</main>;
+  if (loading) return <p>Loading requests...</p>;
+  if (error) return <p className="error">{error}</p>;
 
   return (
-    <main style={{ padding: 16 }}>
-      <h2>Browse Requests</h2>
+    <div className="browse">
+      <h1>Browse Requests</h1>
 
-      {/* Filter Controls */}
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          flexWrap: "wrap",
-          marginBottom: 16,
-          alignItems: "center",
-        }}
-      >
-        {/* Category Filter */}
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          style={{ padding: "6px 8px" }}
-        >
+      <div className="filters">
+        <select value={category} onChange={(e) => setCategory(e.target.value)}>
           <option value="">All Categories</option>
           <option value="Errand">Errand</option>
           <option value="Yardwork">Yardwork</option>
@@ -131,94 +75,53 @@ export default function Browse() {
           <option value="Other">Other</option>
         </select>
 
-        {/* Urgency Filter */}
-        <select
-          value={urgency}
-          onChange={(e) => setUrgency(e.target.value)}
-          style={{ padding: "6px 8px" }}
-        >
+        <select value={urgency} onChange={(e) => setUrgency(e.target.value)}>
           <option value="">All Urgencies</option>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
         </select>
 
-          {/* Status Filter */}
-          <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              style={{ padding: "6px 8px" }}
-          >
-              <option value="">All Statuses</option>
-              <option value="open">Open</option>
-              <option value="in_progress">In Progress</option>
-              <option value="pending_confirmation">Pending Confirmation</option>
-              <option value="closed">Closed</option>
-          </select>
-
-        {/* Distance Filter */}
-        <select
-          value={distance}
-          onChange={(e) => setDistance(e.target.value)}
-          style={{ padding: "6px 8px" }}
-        >
+        <select value={distance} onChange={(e) => setDistance(e.target.value)}>
           <option value="">Any Distance</option>
-          <option value="5">Within 5 mi</option>
-          <option value="10">Within 10 mi</option>
-          <option value="25">Within 25 mi</option>
+          <option value="1">≤ 1 mile</option>
+          <option value="5">≤ 5 miles</option>
+          <option value="10">≤ 10 miles</option>
         </select>
 
-        <button onClick={clearFilters} style={{ padding: "6px 12px" }}>
-          Clear All
-        </button>
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="">All Statuses</option>
+          <option value="Open">Open</option>
+          <option value="Accepted">Accepted</option>
+          <option value="Pending Confirmation">Pending Confirmation</option>
+          <option value="Closed">Closed</option>
+        </select>
       </div>
 
-      {/* Request List */}
-      <ul style={{ display: "grid", gap: 12, padding: 0 }}>
+      <div className="request-list">
         {filteredItems.length === 0 ? (
-          <div>No requests match your filters.</div>
+          <p>No requests found.</p>
         ) : (
-          filteredItems.map((r) => {
-            const author =
-              r?.createdBy?.displayName?.trim() ||
-              r?.createdBy?.email ||
-              r?.author?.displayName?.trim() ||
-              r?.author?.email ||
-              r?.email ||
-              "No user info";
-
-            const id = r._id || r.id;
-
-            return (
-              <li
-                key={id}
-                onClick={() => setSelectedId(id)}
-                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelectedId(id)}
-                role="button"
-                tabIndex={0}
-                style={{
-                  listStyle: "none",
-                  border: "1px solid #333",
-                  borderRadius: 8,
-                  padding: 12,
-                  cursor: "pointer",
-                }}
-              >
-                <strong>{r.title || "Untitled Request"}</strong>
-                  <StatusBadge status={r.status} />
-                <div style={{ opacity: 0.8 }}>
-                  {r.description || "No description provided."}
-                </div>
-                <div style={{ fontSize: 12, opacity: 0.6 }}>posted by {author}</div>
+          <ul>
+            {filteredItems.map((r) => (
+              <li key={r._id} onClick={() => openDetails(r._id)}>
+                <h3>{r.title}</h3>
+                <p>{r.category}</p>
+                <p>Urgency: {r.urgency}</p>
+                <p>Status: {r.status}</p>
               </li>
-            );
-          })
+            ))}
+          </ul>
         )}
-      </ul>
+      </div>
 
       {selectedId && (
-        <RequestDetailsModal requestId={selectedId} onClose={() => setSelectedId(null)} />
+        <RequestDetailsModal
+          requestId={selectedId}
+          onClose={closeDetails}
+          currentUser={currentUser}
+        />
       )}
-    </main>
+    </div>
   );
 }
