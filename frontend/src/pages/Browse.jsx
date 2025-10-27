@@ -8,6 +8,7 @@ export default function Browse() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
   const [selectedId, setSelectedId] = React.useState(null);
+  const [currentUser, setCurrentUser] = React.useState(null);
 
   const [category, setCategory] = React.useState("");
   const [urgency, setUrgency] = React.useState("");
@@ -19,11 +20,16 @@ export default function Browse() {
     (async () => {
       try {
         setLoading(true);
-        const data = await api.listRequests?.(); // GET /api/v1/requests
+        // Fetch both requests and current user info
+        const [reqs, user] = await Promise.all([
+          api.listRequests?.(),
+          api.getCurrentUser?.().catch(() => null),
+        ]);
         if (mounted) {
-          const valid = Array.isArray(data) ? data : [];
+          const valid = Array.isArray(reqs) ? reqs : [];
           setItems(valid);
           setFilteredItems(valid);
+          setCurrentUser(user || null);
         }
       } catch (e) {
         console.error("Browse fetch failed:", e);

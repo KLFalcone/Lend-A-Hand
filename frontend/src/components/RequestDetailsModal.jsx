@@ -5,7 +5,7 @@ export default function RequestDetailsModal({ requestId, onClose }) {
   const [req, setReq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [accepting, setAccepting] = useState(false); // new state
+  const [busy, setBusy] = useState(false); //updated to be used for more than just Accept
   const dialogRef = useRef(null);
 
   useEffect(() => {
@@ -45,20 +45,74 @@ export default function RequestDetailsModal({ requestId, onClose }) {
   async function handleAccept() {
     if (!requestId) return;
     try {
-      setAccepting(true);
+      setBusy(true);
       await api.acceptRequest(requestId);
       alert("✅ Request accepted!");
       // update local state so it shows new status
-      setReq((prev) => ({ ...prev, status: "accepted" }));
+      setReq((prev) => ({ ...prev, status: "in_progress" })); // set to in progress as stated in Issue #30
     } catch (e) {
       console.error(e);
       alert("❌ Failed to accept request. You may need to log in.");
     } finally {
-      setAccepting(false);
+      setBusy(false);
+    }
+  }
+
+    async function handleCancel() {
+    if (!requestId) return;
+    if (!window.confirm("Cancel your acceptance of this request?")) return;
+    try {
+      setBusy(true);
+      await api.cancelAcceptance(requestId);
+      alert("❎ Request cancelled.");
+      setReq((prev) => ({ ...prev, status: "open" }));
+    } catch (e) {
+      console.error(e);
+      alert("❌ Failed to cancel request.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleMarkComplete() {
+    if (!requestId) return;
+    try {
+      setBusy(true);
+      await api.markComplete(requestId);
+      alert("✅ Marked as complete! Awaiting requester confirmation.");
+      setReq((prev) => ({ ...prev, status: "pending_confirmation" }));
+    } catch (e) {
+      console.error(e);
+      alert("❌ Failed to mark complete. You may not be authorized.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleConfirmCompletion() {
+    if (!requestId) return;
+    try {
+      setBusy(true);
+      await api.confirmCompletion(requestId);
+      alert("🎉 Request confirmed and closed!");
+      setReq((prev) => ({ ...prev, status: "closed" }));
+    } catch (e) {
+      console.error(e);
+      alert("❌ Failed to confirm completion.");
+    } finally {
+      setBusy(false);
     }
   }
 
   if (!requestId) return null;
+
+  const status = req?.status || "open";
+
+  // dynamic button visibility
+  const showAccept = status === "open";
+  const showCancel = status === "in_progress";
+  const showMarkComplete = status === "in_progress";
+  const showConfirm = status === "pending_confirmation";
 
   return (
     <div
@@ -122,22 +176,73 @@ export default function RequestDetailsModal({ requestId, onClose }) {
               {/* Accept now works */}
               <button
                 onClick={handleAccept}
-                disabled={accepting || req?.status !== "open"}
+                disabled={busy || req?.status !== "open"}
                 style={{
                   background: "#007bff",
                   color: "#fff",
                   border: "none",
                   padding: "8px 14px",
                   borderRadius: 6,
-                  cursor: accepting ? "wait" : "pointer",
+                  cursor: busy ? "wait" : "pointer",
                 }}
               >
-                {accepting
+                {busy
                   ? "Accepting..."
                   : req?.status === "open"
                   ? "Accept"
                   : "Accepted"}
               </button>
+
+              {showCancel && (
+                <button
+                  onClick={handleCancel}
+                  disabled={busy}
+                  style={{
+                    background: "#dc3545",
+                    color: "#fff",
+                    border: "none",
+                    padding: "8px 14px",
+                    borderRadius: 6,
+                    cursor: busy ? "wait" : "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+
+              {showMarkComplete && (
+                <button
+                  onClick={handleMarkComplete}
+                  disabled={busy}
+                  style={{
+                    background: "#28a745",
+                    color: "#fff",
+                    border: "none",
+                    padding: "8px 14px",
+                    borderRadius: 6,
+                    cursor: busy ? "wait" : "pointer",
+                  }}
+                >
+                  Mark Complete
+                </button>
+              )}
+
+              {showConfirm && (
+                <button
+                  onClick={handleConfirmCompletion}
+                  disabled={busy}
+                  style={{
+                    background: "#17a2b8",
+                    color: "#fff",
+                    border: "none",
+                    padding: "8px 14px",
+                    borderRadius: 6,
+                    cursor: busy ? "wait" : "pointer",
+                  }}
+                >
+                  Confirm Completion
+                </button>
+              )}              
 
               {/* other actions still disabled for now */}
               <button disabled title="Coming soon">Message</button>

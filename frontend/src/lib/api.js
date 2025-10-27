@@ -104,6 +104,12 @@ export const api = {
 
   acceptRequest: (id) =>
     apiFetch(`/api/v1/requests/${id}/accept`, { method: 'PATCH' }),
+  cancelAcceptance: (id) =>
+    apiFetch(`/api/v1/requests/${id}/cancel`, { method: 'PATCH' }),
+  markComplete: (id) =>
+    apiFetch(`/api/v1/requests/${id}/complete`, { method: 'PATCH' }),
+  confirmCompletion: (id) =>
+    apiFetch(`/api/v1/requests/${id}/confirm`, { method: 'PATCH' }),
 
   // --- notifications ---
   listNotifications: () => apiFetch('/api/v1/notifications'),
