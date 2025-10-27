@@ -1,18 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import AvatarPicker from "../components/AvatarPicker";
+
 
 export default function Profile() {
   const navigate = useNavigate();
 
   // profile editor state
-  const [profile, setProfile] = useState(null);
+  //const [profile, setProfile] = useState(null);
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [profile, setProfile] = useState({
+    email: "",
+    displayName: "",
+    address: "",
+    phone: "",
+    availability: "",
+    profilePic: "",
+  });
 
   // activity state
   const [overview, setOverview] = useState(null);
@@ -23,7 +33,7 @@ export default function Profile() {
     let mounted = true;
     (async () => {
       try {
-        const { user } = await api.getProfile(); // /api/v1/users/me
+        const { user } = await api.getProfile(); 
         if (!mounted) return;
         if (!user) {
           navigate("/login");
@@ -79,22 +89,26 @@ export default function Profile() {
         address: profile.address.trim(),
         phone: profile.phone.trim(),
         availability: profile.availability.trim(),
-        profilePic: profile.profilePic.trim(),
+        profilePic: profile.profilePic, 
       };
-      const { user } = await api.updateMe(payload); // PATCH /api/v1/users/me
+  
+      const { user } = await api.updateMe(payload); 
+  
       setProfile((p) => ({
         ...p,
         email: user.email || p.email,
-        displayName: user.displayName || "",
-        address: user.address || "",
-        phone: user.phone || "",
-        availability: user.availability || "",
-        profilePic: user.profilePic || "",
+        displayName: user.displayName || p.displayName,
+        address: user.address || p.address,
+        phone: user.phone || p.phone,
+        availability: user.availability || p.availability,
+        profilePic: user.profilePic || p.profilePic, 
       }));
+  
       setMessage("✅ Profile updated successfully!");
       setEditing(false);
       localStorage.setItem("displayName", user.displayName || "");
     } catch (err) {
+      console.error("Profile update error:", err);
       setMessage(`❌ ${err.message || "Update failed."}`);
     } finally {
       setSaving(false);
@@ -104,11 +118,9 @@ export default function Profile() {
     const handleDeleteAccount = async () => {
         setDeleting(true);
         try {
-            await api.deleteMe(); // DELETE /api/v1/users/me
-            // Clear any stored auth data
+            await api.deleteMe(); 
             localStorage.removeItem('token');
             localStorage.removeItem('displayName');
-            // Redirect to homepage with success message
             navigate('/', { state: { message: 'Account deleted successfully' } });
         } catch (err) {
             setMessage(`${err.message || 'Failed to delete account.'}`);
@@ -120,9 +132,9 @@ export default function Profile() {
 
 
     if (loading) return <p style={{ padding: 16 }}>Loading profile...</p>;
-  if (!profile) return <p style={{ padding: 16 }}>No profile data found.</p>;
+  //if (!profile) return <p style={{ padding: 16 }}>No profile data found.</p>;
+    
 
-  // tiny UI helpers
   const Card = ({ children }) => (
     <div
       style={{
@@ -246,7 +258,9 @@ export default function Profile() {
             </div>
         );
     };
-
+  const avatarUrl = profile.profilePic && profile.profilePic.trim() !== ""
+    ? profile.profilePic
+    : `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(profile.displayName || profile.email || "User")}`;
   return (
     <main style={{ padding: 16, maxWidth: 960, margin: "0 auto" }}>
       <h2 style={{ margin: "6px 0 12px" }}>My Profile</h2>
@@ -271,20 +285,11 @@ export default function Profile() {
               <p>
                 <strong>Availability:</strong> {profile.availability || "—"}
               </p>
-              {profile.profilePic && (
-                <p>
-                  <img
-                    src={profile.profilePic}
-                    alt="Profile"
-                    style={{
-                      width: 100,
-                      height: 100,
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                    }}
-                  />
-                </p>
-              )}
+              
+              <p>
+                <img src={avatarUrl} alt="Profile avatar" />
+              </p>
+              
               <button onClick={() => setEditing(true)}>Edit Profile</button>
                 <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid #e5e7eb' }}>
                     <p style={{ fontSize: 14, color: '#667085', marginBottom: 8 }}>
@@ -337,12 +342,11 @@ export default function Profile() {
                   onChange={handleChange}
                 />
               </div>
-              <div>
-                <label>Profile Picture URL:</label>
-                <input
-                  name="profilePic"
-                  value={profile.profilePic}
-                  onChange={handleChange}
+              <div style={{ marginBottom: 16 }}>
+                <label>Profile Picture / Avatar:</label>
+                <AvatarPicker
+                  user={{ name: profile.displayName || profile.email, avatarUrl }}
+                  onUpdate={(url) => setProfile((p) => ({ ...p, profilePic: url }))}
                 />
               </div>
 

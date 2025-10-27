@@ -40,10 +40,14 @@ export default function Home() {
                     <Link to="/post">Post Request</Link>
                     <Link to="/login">Login</Link>
                     <Link to="/register">Register</Link>
+                    <Link to="/profile">
+                        <button>Go to My Profile</button>
+                    </Link>
                 </div>
                 <button onClick={checkApi}>Check API</button>
                 {status && <pre>{status}</pre>}
             </div>
         </div>
     );
+
 }
