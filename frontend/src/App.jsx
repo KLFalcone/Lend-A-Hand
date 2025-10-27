@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import MobileNavigation from './components/MobileNavigation';
-// import Footer from './components/Footer';
+import Footer from './components/Footer.jsx';
 
 function App() {
   const [matches, setMatches] = useState(
@@ -22,7 +22,7 @@ function App() {
       {matches && (<Navigation />)}
       {!matches && (<MobileNavigation />)}
       <Outlet />
-      {/* <Footer /> */}
+      <Footer />
     </>
   );
 }
