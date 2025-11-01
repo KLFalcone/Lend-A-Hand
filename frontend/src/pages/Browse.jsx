@@ -8,7 +8,7 @@ export default function Browse() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
   const [selectedId, setSelectedId] = React.useState(null);
-  const [currentUser, setCurrentUser] = React.useState(null);
+  const [, setCurrentUser] = React.useState(null);
 
   const [category, setCategory] = React.useState("");
   const [urgency, setUrgency] = React.useState("");
@@ -107,6 +107,24 @@ export default function Browse() {
   if (loading) return <main style={{ padding: 16 }}>Loading…</main>;
   if (error)   return <main style={{ padding: 16 }}>{error}</main>;
   if (!items.length) return <main style={{ padding: 16 }}>No requests yet.</main>;
+
+  const updateStatus = (newStatus, requestId) => {
+  setItems((prevItems) =>
+    prevItems.map((item) =>
+      item._id === requestId || item.id === requestId
+        ? { ...item, status: newStatus }
+        : item
+    )
+  );
+
+  setFilteredItems((prevItems) =>
+    prevItems.map((item) =>
+      item._id === requestId || item.id === requestId
+        ? { ...item, status: newStatus }
+        : item
+    )
+  );
+};
 
   return (
     <main style={{ padding: 16 }}>
@@ -223,7 +241,10 @@ export default function Browse() {
       </ul>
 
       {selectedId && (
-        <RequestDetailsModal requestId={selectedId} onClose={() => setSelectedId(null)} />
+        <RequestDetailsModal 
+        requestId={selectedId} 
+        onClose={() => setSelectedId(null)} 
+        onStatusChange={(newStatus) => updateStatus(newStatus, selectedId)}/>
       )}
     </main>
   );

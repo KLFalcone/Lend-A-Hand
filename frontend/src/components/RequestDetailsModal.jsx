@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
 
-export default function RequestDetailsModal({ requestId, onClose }) {
+export default function RequestDetailsModal({ requestId, onClose, onStatusChange }) {
   const [req, setReq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false); //updated to be used for more than just Accept
   const dialogRef = useRef(null);
-
+  console.log("onStatusChange prop:", onStatusChange);
   useEffect(() => {
     if (!requestId) return;
     let mounted = true;
@@ -16,7 +16,7 @@ export default function RequestDetailsModal({ requestId, onClose }) {
         setLoading(true);
         const data = await api.getRequest(requestId);
         if (mounted) setReq(data);
-      } catch (e) {
+      } catch {
         if (mounted) setErr("Failed to load request details.");
       } finally {
         if (mounted) setLoading(false);
@@ -50,6 +50,7 @@ export default function RequestDetailsModal({ requestId, onClose }) {
       alert("✅ Request accepted!");
       // update local state so it shows new status
       setReq((prev) => ({ ...prev, status: "in_progress" })); // set to in progress as stated in Issue #30
+      onStatusChange("in_progress");
     } catch (e) {
       console.error(e);
       alert("❌ Failed to accept request. You may need to log in.");
@@ -66,6 +67,7 @@ export default function RequestDetailsModal({ requestId, onClose }) {
       await api.cancelAcceptance(requestId);
       alert("❎ Request cancelled.");
       setReq((prev) => ({ ...prev, status: "open" }));
+      onStatusChange("open");
     } catch (e) {
       console.error(e);
       alert("❌ Failed to cancel request.");
@@ -81,6 +83,7 @@ export default function RequestDetailsModal({ requestId, onClose }) {
       await api.markComplete(requestId);
       alert("✅ Marked as complete! Awaiting requester confirmation.");
       setReq((prev) => ({ ...prev, status: "pending_confirmation" }));
+      onStatusChange("pending_confirmation");
     } catch (e) {
       console.error(e);
       alert("❌ Failed to mark complete. You may not be authorized.");
@@ -96,6 +99,7 @@ export default function RequestDetailsModal({ requestId, onClose }) {
       await api.confirmCompletion(requestId);
       alert("🎉 Request confirmed and closed!");
       setReq((prev) => ({ ...prev, status: "closed" }));
+      onStatusChange("closed");
     } catch (e) {
       console.error(e);
       alert("❌ Failed to confirm completion.");
