@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import './PostRequest.css';
 
 export default function PostRequest() {
   const navigate = useNavigate();
@@ -10,17 +11,16 @@ export default function PostRequest() {
   const [category, setCategory] = React.useState("");
   const [urgency, setUrgency] = React.useState("");
   const [address, setAddress] = React.useState("");
-  const [coords, setCoords] = React.useState(null); // { lat, lon }
+  const [coords, setCoords] = React.useState(null); 
   const [message, setMessage] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
 
-  // Load profile + prefill address; redirect if not logged in
   React.useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const { user } = await api.getProfile(); // /api/v1/users/me
+        const { user } = await api.getProfile();
         if (!mounted) return;
         if (!user) {
           navigate("/login");
@@ -28,13 +28,10 @@ export default function PostRequest() {
         }
         if (user.address) setAddress(user.address);
       } catch (e) {
-        // unauthenticated → to login
         navigate("/login");
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [navigate]);
 
   async function useProfileAddress() {
@@ -53,7 +50,6 @@ export default function PostRequest() {
     }
   }
 
-  // Get browser location and reverse-geocode to a human address
   async function useCurrentLocation() {
     setMessage("");
     setBusy(true);
@@ -68,7 +64,6 @@ export default function PostRequest() {
       const { latitude, longitude } = pos.coords;
       setCoords({ lat: latitude, lon: longitude });
 
-      // Reverse geocode via OpenStreetMap Nominatim
       const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`;
       const res = await fetch(url, { headers: { Accept: "application/json" } });
       const data = await res.json();
@@ -86,7 +81,6 @@ export default function PostRequest() {
     setMessage("");
     setSubmitting(true);
 
-    // Client-side validation
     if (!title || !description || !category || !urgency || !address) {
       setMessage("Please fill in all required fields.");
       setSubmitting(false);
@@ -101,34 +95,29 @@ export default function PostRequest() {
         urgency,
         location: {
           address,
-          coordinates: coords ? [coords.lon, coords.lat] : undefined, // [lng, lat]
+          coordinates: coords ? [coords.lon, coords.lat] : undefined,
         },
       };
 
       await api.createRequest(payload);
-
       setMessage("Request posted!");
       setTimeout(() => navigate("/browse"), 800);
     } catch (err) {
       console.error(err);
-      if (err.message?.includes("401")) {
-        navigate("/login");
-      } else {
-        setMessage("Could not post request. Please try again.");
-      }
+      if (err.message?.includes("401")) navigate("/login");
+      else setMessage("Could not post request. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <main style={{ padding: 16 }}>
+    <main className="postrequest-container">
       <h2>Create a New Request</h2>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "grid", gap: 12, maxWidth: 520 }}
-      >
+      {message && <p className="postrequest-message">{message}</p>}
+
+      <form onSubmit={handleSubmit} className="postrequest-form">
         <input
           type="text"
           placeholder="Short title"
@@ -170,7 +159,7 @@ export default function PostRequest() {
           <option value="high">High</option>
         </select>
 
-        <div style={{ display: "grid", gap: 8 }}>
+        <div className="postrequest-location">
           <input
             type="text"
             placeholder="Location (address)"
@@ -178,7 +167,7 @@ export default function PostRequest() {
             onChange={(e) => setAddress(e.target.value)}
             required
           />
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="postrequest-location-buttons">
             <button type="button" onClick={useProfileAddress}>
               Use my profile address
             </button>
@@ -187,7 +176,7 @@ export default function PostRequest() {
             </button>
           </div>
           {coords && (
-            <div style={{ fontSize: 12, opacity: 0.7 }}>
+            <div className="postrequest-coords">
               coords: {coords.lat.toFixed(5)}, {coords.lon.toFixed(5)}
             </div>
           )}
@@ -197,10 +186,6 @@ export default function PostRequest() {
           {submitting ? "Posting..." : "Post Request"}
         </button>
       </form>
-
-      {message && (
-        <p style={{ marginTop: 8, fontWeight: "bold" }}>{message}</p>
-      )}
     </main>
   );
 }

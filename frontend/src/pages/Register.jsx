@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import './Register.css';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -14,24 +15,22 @@ export default function Register() {
     setMessage("");
 
     try {
-      // --- register new user ---
+      // Register new user
       const { user } = await api.register(
         email.trim(),
         password,
         displayName.trim()
       );
 
-      // immediately log them in after registering
+      // Immediately log in
       const { user: loggedInUser } = await api.login(email, password);
 
-      // save basics for navbar/local UI
       localStorage.setItem("userEmail", loggedInUser.email);
       localStorage.setItem("displayName", loggedInUser.displayName || "");
       localStorage.setItem("role", loggedInUser.role || "user");
       localStorage.setItem("displayName", user.displayName || "");
-      window.dispatchEvent(new Event("auth-changed")); // ping header
-      
-      // fetch full profile to check if address is missing
+      window.dispatchEvent(new Event("auth-changed")); // update header
+
       const { user: fullUser } = await api.me();
       const needsOnboarding = !fullUser.address?.trim();
 
@@ -41,7 +40,6 @@ export default function Register() {
         }`
       );
 
-      // redirect accordingly
       setTimeout(() => {
         if (needsOnboarding) {
           navigate("/profile?onboard=1");
@@ -56,39 +54,34 @@ export default function Register() {
   };
 
   return (
-    <main style={{ padding: 16 }}>
+    <main className="register-container">
       <h2>Register</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <input
-            type="text"
-            placeholder="Display name (optional)"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-          />
-        </div>
-        <div>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+
+      {message && <p className="register-message">{message}</p>}
+
+      <form onSubmit={handleSubmit} className="register-form">
+        <input
+          type="text"
+          placeholder="Display name (optional)"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
         <button type="submit">Register</button>
       </form>
-
-      {message && <p style={{ marginTop: 10 }}>{message}</p>}
     </main>
   );
 }
