@@ -1,53 +1,70 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { api } from "../lib/api";
+import './Home.css'
 
 export default function Home() {
-    const location = useLocation();
-    const successMessage = location.state?.message;
-    const [status, setStatus] = React.useState("");
+  const [user, setUser] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
 
-    const checkApi = async () => {
-        try {
-            const data = await api.health();
-            setStatus(JSON.stringify(data, null, 2));
-        } catch {
-            setStatus("API not reachable");
-        }
-    };
+  React.useEffect(() => {
+    async function fetchUser() {
+      try {
+        const data = await api.me();
+        setUser(data);
+      } catch {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchUser();
+  }, []);
 
+  if (loading) {
     return (
-        <div className="wrapper">
-            {successMessage && (
-                <div style={{
-                    padding: 16,
-                    background: '#dcfce7',
-                    color: '#166534',
-                    borderRadius: 8,
-                    margin: '0 auto 16px',
-                    maxWidth: 960,
-                    border: '1px solid #bbf7d0'
-                }}>
-                    {successMessage}
-                </div>
-            )}
-
-            <div className="container-fluid">
-                <h1>Neighborhood Help</h1>
-                <p>Neighbors helping neighbors with everyday tasks.</p>
-                <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-                    <Link to="/browse">Browse Requests</Link>
-                    <Link to="/post">Post Request</Link>
-                    <Link to="/login">Login</Link>
-                    <Link to="/register">Register</Link>
-                    <Link to="/profile">
-                        <button>Go to My Profile</button>
-                    </Link>
-                </div>
-                <button onClick={checkApi}>Check API</button>
-                {status && <pre>{status}</pre>}
-            </div>
-        </div>
+      <div className="home-loading">
+        <p>Loading...</p>
+      </div>
     );
+  }
 
+  return (
+    <div className="home">
+      <header className="home-header">
+        <h1 className="home-title">Neighborhood Help</h1>
+        <p className="home-slogan">
+          Neighbors helping neighbors with everyday tasks.
+        </p>
+      </header>
+
+      <main className="home-content">
+        {user ? (
+          <div className="home-actions">
+            <p>Welcome back, {user.displayName || "neighbor"}!</p>
+            <div className="home-buttons">
+              <Link to="/browse" className="home-button browse-button">
+                Browse Requests
+              </Link>
+              <Link to="/post" className="home-button post-button">
+                Create a New Post
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="home-actions">
+            <p>Join the community to start helping or getting help today!</p>
+            <div className="home-buttons">
+              <Link to="/login" className="home-button login-button">
+                Login
+              </Link>
+              <Link to="/register" className="home-button register-button">
+                Register
+              </Link>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
 }

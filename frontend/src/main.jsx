@@ -8,7 +8,10 @@ import Browse from './pages/Browse.jsx'
 import PostRequest from './pages/PostRequest.jsx'
 import Register from './pages/Register.jsx'
 import Login from './pages/Login.jsx'
-import Profile from './pages/Profile.jsx';
+import Profile from './pages/Profile.jsx'
+import Privacy from './pages/Privacy.jsx'
+import Terms from './pages/Terms.jsx'
+import Support from './pages/Support.jsx'
 import SpecificPost from "./pages/SpecificPost.jsx";
 
 const router = createBrowserRouter([
@@ -45,15 +48,15 @@ const router = createBrowserRouter([
       },
       {
         path: "/privacy",
-        element: <Profile />,
+        element: <Privacy />,
       },
       {
         path: "/terms",
-        element: <Profile />,
+        element: <Terms />,
       },
       {
         path: "/support",
-        element: <Profile />,
+        element: <Support />,
       },
     ],
   },

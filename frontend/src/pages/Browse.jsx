@@ -1,6 +1,7 @@
 import React from "react";
 import { api } from "../lib/api";
 import RequestDetailsModal from "../components/RequestDetailsModal";
+import './Browse.css';
 
 export default function Browse() {
   const [items, setItems] = React.useState([]);
@@ -15,12 +16,15 @@ export default function Browse() {
   const [distance, setDistance] = React.useState("");
   const [status, setStatus] = React.useState("");
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
+
   React.useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         setLoading(true);
-        // Fetch both requests and current user info
         const [reqs, user] = await Promise.all([
           api.listRequests?.(),
           api.getCurrentUser?.().catch(() => null),
@@ -44,25 +48,16 @@ export default function Browse() {
   React.useEffect(() => {
     let result = items;
 
-    if (category) {
-      result = result.filter((r) => r.category?.toLowerCase() === category.toLowerCase());
-    }
-
-    if (urgency) {
-      result = result.filter((r) => r.urgency?.toLowerCase() === urgency.toLowerCase());
-    }
-
-      if (status) {
-          result = result.filter((r) => r.status?.toLowerCase() === status.toLowerCase());
-      }
-
-    // TODO: implement the API for the distance filter to work
+    if (category) result = result.filter(r => r.category?.toLowerCase() === category.toLowerCase());
+    if (urgency) result = result.filter(r => r.urgency?.toLowerCase() === urgency.toLowerCase());
+    if (status) result = result.filter(r => r.status?.toLowerCase() === status.toLowerCase());
     if (distance) {
       const d = Number(distance);
-      result = result.filter((r) => r.distance <= d);
+      result = result.filter(r => r.distance <= d);
     }
 
     setFilteredItems(result);
+    setCurrentPage(1); // reset to first page on filter change
   }, [category, urgency, status, distance, items]);
 
   const clearFilters = () => {
@@ -72,80 +67,36 @@ export default function Browse() {
     setStatus("");
   };
 
-    const StatusBadge = ({ status }) => {
-        const s = String(status || "open").toLowerCase();
-        const styles = {
-            base: {
-                fontSize: 12,
-                borderRadius: 999,
-                padding: "4px 10px",
-                fontWeight: 500,
-                display: "inline-block",
-                textTransform: "capitalize",
-            },
-            open: {
-                background: "#dbeafe",
-                color: "#1e40af"
-            },
-            in_progress: {
-                background: "#d1fae5",
-                color: "#065f46"
-            },
-            pending_confirmation: {
-                background: "#fef3c7",
-                color: "#92400e"
-            },
-            closed: {
-                background: "#fee2e2",
-                color: "#991b1b"
-            },
-        };
-        const style = { ...styles.base, ...(styles[s] || styles.open) };
-        return <span style={style}>{s.replace("_", " ")}</span>;
-    };
-
-  if (loading) return <main style={{ padding: 16 }}>Loading…</main>;
-  if (error)   return <main style={{ padding: 16 }}>{error}</main>;
-  if (!items.length) return <main style={{ padding: 16 }}>No requests yet.</main>;
+  const StatusBadge = ({ status }) => {
+    const s = String(status || "open").toLowerCase();
+    return <span className={`status-badge status-${s}`}>{s.replace("_", " ")}</span>;
+  };
 
   const updateStatus = (newStatus, requestId) => {
-  setItems((prevItems) =>
-    prevItems.map((item) =>
-      item._id === requestId || item.id === requestId
-        ? { ...item, status: newStatus }
-        : item
-    )
-  );
+    setItems(prev => prev.map(item =>
+      item._id === requestId || item.id === requestId ? { ...item, status: newStatus } : item
+    ));
+    setFilteredItems(prev => prev.map(item =>
+      item._id === requestId || item.id === requestId ? { ...item, status: newStatus } : item
+    ));
+  };
 
-  setFilteredItems((prevItems) =>
-    prevItems.map((item) =>
-      item._id === requestId || item.id === requestId
-        ? { ...item, status: newStatus }
-        : item
-    )
-  );
-};
+  // Pagination logic
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentItems = filteredItems.slice(startIndex, startIndex + itemsPerPage);
+
+  if (loading) return <main className="browse-container">Loading…</main>;
+  if (error) return <main className="browse-container">{error}</main>;
+  if (!items.length) return <main className="browse-container">No requests yet.</main>;
 
   return (
-    <main style={{ padding: 16 }}>
-      <h2>Browse Requests</h2>
+    <main className="browse-container">
+      <h2 className="browse-title">Browse Requests</h2>
 
-      {/* Filter Controls */}
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          flexWrap: "wrap",
-          marginBottom: 16,
-          alignItems: "center",
-        }}
-      >
-        {/* Category Filter */}
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          style={{ padding: "6px 8px" }}
-        >
+      {/* Filters */}
+      <div className="filter-bar">
+        <select value={category} onChange={(e) => setCategory(e.target.value)}>
           <option value="">All Categories</option>
           <option value="Errand">Errand</option>
           <option value="Yardwork">Yardwork</option>
@@ -155,62 +106,39 @@ export default function Browse() {
           <option value="Other">Other</option>
         </select>
 
-        {/* Urgency Filter */}
-        <select
-          value={urgency}
-          onChange={(e) => setUrgency(e.target.value)}
-          style={{ padding: "6px 8px" }}
-        >
+        <select value={urgency} onChange={(e) => setUrgency(e.target.value)}>
           <option value="">All Urgencies</option>
           <option value="low">Low</option>
           <option value="medium">Medium</option>
           <option value="high">High</option>
         </select>
 
-          {/* Status Filter */}
-          <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              style={{ padding: "6px 8px" }}
-          >
-              <option value="">All Statuses</option>
-              <option value="open">Open</option>
-              <option value="in_progress">In Progress</option>
-              <option value="pending_confirmation">Pending Confirmation</option>
-              <option value="closed">Closed</option>
-          </select>
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="">All Statuses</option>
+          <option value="open">Open</option>
+          <option value="in_progress">In Progress</option>
+          <option value="pending_confirmation">Pending Confirmation</option>
+          <option value="closed">Closed</option>
+        </select>
 
-        {/* Distance Filter */}
-        <select
-          value={distance}
-          onChange={(e) => setDistance(e.target.value)}
-          style={{ padding: "6px 8px" }}
-        >
+        <select value={distance} onChange={(e) => setDistance(e.target.value)}>
           <option value="">Any Distance</option>
           <option value="5">Within 5 mi</option>
           <option value="10">Within 10 mi</option>
           <option value="25">Within 25 mi</option>
         </select>
 
-        <button onClick={clearFilters} style={{ padding: "6px 12px" }}>
-          Clear All
-        </button>
+        <button onClick={clearFilters}>Clear All</button>
       </div>
 
-      {/* Request List */}
-      <ul style={{ display: "grid", gap: 12, padding: 0 }}>
-        {filteredItems.length === 0 ? (
+      {/* Requests */}
+      <ul className="request-list">
+        {currentItems.length === 0 ? (
           <div>No requests match your filters.</div>
         ) : (
-          filteredItems.map((r) => {
-            const author =
-              r?.createdBy?.displayName?.trim() ||
-              r?.createdBy?.email ||
-              r?.author?.displayName?.trim() ||
-              r?.author?.email ||
-              r?.email ||
-              "No user info";
-
+          currentItems.map(r => {
+            const author = r?.createdBy?.displayName?.trim() || r?.createdBy?.email ||
+              r?.author?.displayName?.trim() || r?.author?.email || r?.email || "No user info";
             const id = r._id || r.id;
 
             return (
@@ -220,31 +148,43 @@ export default function Browse() {
                 onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelectedId(id)}
                 role="button"
                 tabIndex={0}
-                style={{
-                  listStyle: "none",
-                  border: "1px solid #333",
-                  borderRadius: 8,
-                  padding: 12,
-                  cursor: "pointer",
-                }}
+                className="request-item"
               >
                 <strong>{r.title || "Untitled Request"}</strong>
-                  <StatusBadge status={r.status} />
-                <div style={{ opacity: 0.8 }}>
-                  {r.description || "No description provided."}
-                </div>
-                <div style={{ fontSize: 12, opacity: 0.6 }}>posted by {author}</div>
+                <StatusBadge status={r.status} />
+                <div className="request-desc">{r.description || "No description provided."}</div>
+                <div className="request-author">posted by {author}</div>
               </li>
             );
           })
         )}
       </ul>
 
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+          >
+            Previous
+          </button>
+          <span>Page {currentPage} of {totalPages}</span>
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+          >
+            Next
+          </button>
+        </div>
+      )}
+
       {selectedId && (
-        <RequestDetailsModal 
-        requestId={selectedId} 
-        onClose={() => setSelectedId(null)} 
-        onStatusChange={(newStatus) => updateStatus(newStatus, selectedId)}/>
+        <RequestDetailsModal
+          requestId={selectedId}
+          onClose={() => setSelectedId(null)}
+          onStatusChange={(newStatus) => updateStatus(newStatus, selectedId)}
+        />
       )}
     </main>
   );

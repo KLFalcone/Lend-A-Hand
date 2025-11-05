@@ -1,0 +1,114 @@
+/* Home.css */
+
+/* General page layout */
+.home {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: #f0f4f8; /* light background */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+}
+
+/* Header */
+.home-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.home-title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #1e3a8a; /* dark blue */
+}
+
+.home-slogan {
+  font-size: 1.25rem;
+  color: #4b5563; /* gray */
+}
+
+/* Main content area */
+.home-content {
+  text-align: center;
+}
+
+/* Loading state */
+.home-loading p {
+  font-size: 1.25rem;
+  color: #6b7280;
+}
+
+/* Action sections */
+.home-actions p {
+  font-size: 1.125rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Buttons container */
+.home-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* Buttons */
+.home-button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: inline-block;
+}
+
+/* Logged-in buttons */
+.browse-button {
+  background-color: #3b82f6; /* blue */
+  color: #fff;
+}
+
+.browse-button:hover {
+  background-color: #2563eb;
+}
+
+.post-button {
+  background-color: #10b981; /* green */
+  color: #fff;
+}
+
+.post-button:hover {
+  background-color: #059669;
+}
+
+/* Login/register buttons */
+.login-button,
+.register-button {
+  background-color: #e5e7eb; /* light gray */
+  color: #111827;
+}
+
+.login-button:hover,
+.register-button:hover {
+  background-color: #d1d5db;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .home-title {
+    font-size: 2.25rem;
+  }
+  .home-slogan {
+    font-size: 1rem;
+  }
+  .home-button {
+    width: 100%;
+    text-align: center;
+  }
+}

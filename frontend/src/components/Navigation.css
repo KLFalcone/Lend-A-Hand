@@ -1,15 +1,16 @@
 /* Wrapper */
 .nav-wrapper {
   width: 100%;
-  background: #fff; /* or your theme */
-  border-bottom: 1px solid #e6e6e6;
+  background: #ffffff; /* main page background */
+  border-bottom: 1px solid #e5e7eb; /* subtle light gray border */
+  font-family: 'Inter', sans-serif;
 }
 
 /* Main nav bar: three lanes */
 #nav {
-  max-width: 1100px;      /* optional: center content */
-  margin: 0 auto;         /* optional: center content */
-  padding: 10px 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -23,7 +24,7 @@
 #nav-center {
   flex: 1 1 auto;
   display: flex;
-  justify-content: center;
+  justify-content: end;
 }
 
 #nav-right {
@@ -37,51 +38,58 @@
 /* Brand */
 #nav-header {
   text-decoration: none;
-  color: inherit;
+  color: #111827; /* dark neutral for brand name */
 }
 
 #nav-name {
   font-weight: 700;
-  font-size: 20px;
+  font-size: 22px; /* slightly bigger for modern look */
 }
 
 /* Links row (center) */
 #nav-pages {
   display: flex;
   align-items: center;
-  gap: 24px;              /* <-- spacing between links */
+  gap: 24px;
 }
 
 #nav-pages a {
   text-decoration: none;
-  color: #1a1a1a;
+  color: #374151; /* medium dark gray for links */
   font-weight: 500;
+  font-size: 15px;
+  transition: color 0.2s ease;
 }
 
 #nav-pages a:hover {
+  color: #3b82f6; /* blue hover to match theme buttons */
   text-decoration: underline;
 }
 
 .selected-nav {
+  color: #3b82f6; /* highlight selected page */
   text-decoration: underline;
 }
 
 /* Right side: user + logout */
 .nav-user .welcome-text {
   font-size: 14px;
-  color: #333;
+  color: #374151;
 }
 
 .logout-btn {
   padding: 6px 10px;
-  border: 1px solid #ccc;
-  background: #f7f7f7;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 14px;
+  color: #111827;
+  transition: background 0.2s ease;
 }
 
 .logout-btn:hover {
-  background: #eee;
+  background: #e5e7eb;
 }
 
 /* Optional: NotificationBell button reset so it aligns nicely */
@@ -90,4 +98,5 @@ button[aria-label="Notifications"] {
   background: transparent;
   cursor: pointer;
   line-height: 0;
+  color: #374151;
 }

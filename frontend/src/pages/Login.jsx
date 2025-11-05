@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { api } from "../lib/api";
+import './Login.css';
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -13,18 +14,14 @@ export default function Login() {
     setMessage("");
 
     try {
-      // --- login request ---
       const { user } = await api.login(email, password);
 
-      // store basics for navbar/local UI
       localStorage.setItem("userEmail", user.email);
       localStorage.setItem("displayName", user.displayName || "");
       localStorage.setItem("role", user.role || "user");
-      localStorage.setItem("displayName", user.displayName || "");
-      window.dispatchEvent(new Event("auth-changed")); // ping header
+      window.dispatchEvent(new Event("auth-changed")); // update header
 
-      // check if user needs onboarding
-      const { user: fullUser } = await api.me(); // ensures latest data
+      const { user: fullUser } = await api.me();
       const needsOnboarding = !fullUser.address?.trim();
 
       setMessage(
@@ -33,7 +30,6 @@ export default function Login() {
         }`
       );
 
-      // redirect based on profile completeness
       setTimeout(() => {
         if (needsOnboarding) {
           navigate("/profile?onboard=1");
@@ -48,33 +44,30 @@ export default function Login() {
   };
 
   return (
-    <main style={{ padding: 16 }}>
+    <main className="login-container">
       <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+
+      {message && <p className="login-message">{message}</p>}
+
+      <form onSubmit={handleSubmit} className="login-form">
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
         <button type="submit">Login</button>
       </form>
 
-      {message && <p style={{ marginTop: 10 }}>{message}</p>}
-
-      <p style={{ marginTop: 16 }}>
+      <p className="login-register">
         Don’t have an account? <Link to="/register">Register</Link>
       </p>
     </main>
