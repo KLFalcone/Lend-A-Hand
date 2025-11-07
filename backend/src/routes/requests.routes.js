@@ -3,6 +3,7 @@ import * as ctrl from '../controllers/requests.controller.js'
 import auth from '../middleware/auth.js'
 
 const r = Router()
+r.get('/near', ctrl.getNearbyRequests)
 r.get('/', ctrl.list)
 r.post('/', auth, ctrl.create)
 r.get('/:id', ctrl.getOne)

@@ -111,6 +111,10 @@ export const api = {
   confirmCompletion: (id) =>
     apiFetch(`/api/v1/requests/${id}/confirm`, { method: 'PATCH' }),
 
+    // new helper for nearby search
+  getNearbyRequests: (lat, lng, miles) =>
+    apiFetch(`/api/v1/requests/near?lat=${lat}&lng=${lng}&maxDistance=${miles}`),
+
   // --- notifications ---
   listNotifications: () => apiFetch('/api/v1/notifications'),
   markNotificationRead: (id) =>

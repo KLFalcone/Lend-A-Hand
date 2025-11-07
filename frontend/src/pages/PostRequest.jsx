@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import './PostRequest.css';
+import "./PostRequest.css";
 
 export default function PostRequest() {
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ export default function PostRequest() {
   const [category, setCategory] = React.useState("");
   const [urgency, setUrgency] = React.useState("");
   const [address, setAddress] = React.useState("");
-  const [coords, setCoords] = React.useState(null); 
+  const [coords, setCoords] = React.useState(null); // { lat, lon }
   const [message, setMessage] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
@@ -27,11 +27,13 @@ export default function PostRequest() {
           return;
         }
         if (user.address) setAddress(user.address);
-      } catch (e) {
+      } catch {
         navigate("/login");
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [navigate]);
 
   async function useProfileAddress() {
@@ -40,7 +42,7 @@ export default function PostRequest() {
       const { user } = await api.getProfile();
       if (user?.address) {
         setAddress(user.address);
-        setCoords(null);
+        setCoords(null); // address-only; coords will require geocode or current location
         setMessage("Using your saved home address.");
       } else {
         setMessage("No saved address on your profile yet.");
@@ -64,6 +66,7 @@ export default function PostRequest() {
       const { latitude, longitude } = pos.coords;
       setCoords({ lat: latitude, lon: longitude });
 
+      // reverse geocode for a friendly address label (optional)
       const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`;
       const res = await fetch(url, { headers: { Accept: "application/json" } });
       const data = await res.json();
@@ -81,8 +84,14 @@ export default function PostRequest() {
     setMessage("");
     setSubmitting(true);
 
+    // require coords so we always send valid GeoJSON for the 2dsphere index
     if (!title || !description || !category || !urgency || !address) {
       setMessage("Please fill in all required fields.");
+      setSubmitting(false);
+      return;
+    }
+    if (!coords) {
+      setMessage("Please use your current location (or save a profile address and then set location).");
       setSubmitting(false);
       return;
     }
@@ -95,7 +104,8 @@ export default function PostRequest() {
         urgency,
         location: {
           address,
-          coordinates: coords ? [coords.lon, coords.lat] : undefined,
+          type: "Point",
+          coordinates: [Number(coords.lon), Number(coords.lat)], // [lng, lat]
         },
       };
 
@@ -134,11 +144,7 @@ export default function PostRequest() {
           required
         />
 
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          required
-        >
+        <select value={category} onChange={(e) => setCategory(e.target.value)} required>
           <option value="">Select category</option>
           <option value="Errand">Errand</option>
           <option value="Yardwork">Yardwork</option>
@@ -148,11 +154,7 @@ export default function PostRequest() {
           <option value="Other">Other</option>
         </select>
 
-        <select
-          value={urgency}
-          onChange={(e) => setUrgency(e.target.value)}
-          required
-        >
+        <select value={urgency} onChange={(e) => setUrgency(e.target.value)} required>
           <option value="">Select urgency</option>
           <option value="low">Low</option>
           <option value="medium">Medium</option>

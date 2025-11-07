@@ -1,32 +1,62 @@
 import Request from "../models/request.js";
 import { createNotification } from "./notifications.controller.js";
-import { sendEmail } from '../services/emailService.js';
+import { sendEmail } from "../services/emailService.js";
 
-// GET /api/v1/requests
-// Supports simple filters: ?status=open&tag=yard
+/* utils */
+const toNum = (v) => (v === undefined ? undefined : Number(v));
+const isFiniteNum = (v) => Number.isFinite(toNum(v));
+
+/**
+ * GET /api/v1/requests
+ * Query params:
+ *   status=open
+ *   tag=Errand  (alias of category)
+ *   category=Errand
+ *   lat=39.04&lng=-77.48&maxDistance=5000  (meters; optional)
+ */
 export async function list(req, res, next) {
   try {
-    const { status, tag } = req.query;
-    const query = {};
-    if (status) query.status = status;
-    if (tag) query.tags = tag;
+    const { status, tag, category, lat, lng, maxDistance } = req.query;
 
-    const items = await Request.find(query)
+    const q = {};
+    if (status) q.status = status;
+    // support either ?tag= or ?category=
+    if (tag) q.category = tag;
+    if (category) q.category = category;
+
+    const hasGeo =
+      lat !== undefined &&
+      lng !== undefined &&
+      isFiniteNum(lat) &&
+      isFiniteNum(lng) &&
+      isFiniteNum(maxDistance);
+
+    if (hasGeo) {
+      q.location = {
+        $near: {
+          $geometry: { type: "Point", coordinates: [Number(lng), Number(lat)] },
+          $maxDistance: Number(maxDistance), // meters
+        },
+      };
+    }
+
+    const items = await Request.find(q)
       .sort({ createdAt: -1 })
       .populate("createdBy", "displayName email")
       .populate("acceptedBy", "displayName email");
+
     res.json(items);
   } catch (e) {
     next(e);
   }
 }
 
-// POST /api/v1/requests (auth required)
+/** POST /api/v1/requests (auth required) */
 export async function create(req, res, next) {
   try {
     const doc = await Request.create({
       ...req.body,
-      createdBy: req.user?._id, // requester
+      createdBy: req.user?._id,
     });
     res.status(201).json(doc);
   } catch (e) {
@@ -34,7 +64,7 @@ export async function create(req, res, next) {
   }
 }
 
-// GET /api/v1/requests/:id
+/** GET /api/v1/requests/:id */
 export async function getOne(req, res, next) {
   try {
     const doc = await Request.findById(req.params.id)
@@ -47,7 +77,7 @@ export async function getOne(req, res, next) {
   }
 }
 
-// PATCH /api/v1/requests/:id (auth required)
+/** PATCH /api/v1/requests/:id (auth required) */
 export async function update(req, res, next) {
   try {
     const { id } = req.params;
@@ -61,7 +91,7 @@ export async function update(req, res, next) {
       runValidators: true,
     }).populate("createdBy", "displayName email");
 
-    // Fire-and-forget notifications when status changes
+    // best-effort notifications on status change
     try {
       const newStatus = req.body?.status;
       const changed = newStatus && newStatus !== before.status;
@@ -86,8 +116,8 @@ export async function update(req, res, next) {
           }
         }
       }
-    } catch (e) {
-      console.error("notify on request update failed:", e?.message);
+    } catch (notifyErr) {
+      console.error("notify on request update failed:", notifyErr?.message);
     }
 
     res.json(doc);
@@ -96,7 +126,7 @@ export async function update(req, res, next) {
   }
 }
 
-// DELETE /api/v1/requests/:id (auth required)
+/** DELETE /api/v1/requests/:id (auth required) */
 export async function remove(req, res, next) {
   try {
     const doc = await Request.findByIdAndDelete(req.params.id);
@@ -107,7 +137,7 @@ export async function remove(req, res, next) {
   }
 }
 
-// PATCH /api/v1/requests/:id/accept
+/** PATCH /api/v1/requests/:id/accept */
 export async function acceptRequest(req, res, next) {
   try {
     const { id } = req.params;
@@ -128,32 +158,27 @@ export async function acceptRequest(req, res, next) {
     request.acceptedBy = userId;
     await request.save();
 
-    // Notify the request creator
+    // notify requester
     await createNotification({
       recipientId: request.createdBy,
       type: "request_accepted",
       message: `${req.user.displayName || req.user.email} accepted your request "${request.title}".`,
     });
 
-    // Trigger email notification to accepter on request accept
-    const accepter_subject = 'You just accepted a request';
-    const accepter_body = `Hi ${req.user.displayName} you just accepted request ${request.title}`;
+    // email accepter
     await sendEmail({
       to: req.user.email,
-      subject: accepter_subject,
-      body: accepter_body,
-  });
+      subject: "You just accepted a request",
+      body: `Hi ${req.user.displayName}, you just accepted request "${request.title}".`,
+    });
 
-    // Trigger email notification to the request creator that their request has been accepted.
-    const requestCreator = await Request.findById(id).populate('createdBy');
-    const creatorEmail = requestCreator.createdBy.email;
-    const subject = 'Your request was just accepted.';
-    const body = `Hi ${requestCreator.createdBy.displayName} your request was just accepted by ${req.user.displayName}`;
+    // email requester
+    const requestCreator = await Request.findById(id).populate("createdBy");
     await sendEmail({
-      to: creatorEmail,
-      subject: subject,
-      body: body,
-  });
+      to: requestCreator.createdBy.email,
+      subject: "Your request was just accepted",
+      body: `Hi ${requestCreator.createdBy.displayName}, your request "${request.title}" was just accepted by ${req.user.displayName}.`,
+    });
 
     res.json(request);
   } catch (e) {
@@ -161,7 +186,7 @@ export async function acceptRequest(req, res, next) {
   }
 }
 
-// PATCH /requests/:id/complete
+/** PATCH /api/v1/requests/:id/complete */
 export async function markComplete(req, res, next) {
   try {
     const { id } = req.params;
@@ -188,10 +213,12 @@ export async function markComplete(req, res, next) {
       message: `${req.user.displayName || req.user.email} marked your request "${request.title}" as complete. Please confirm.`,
     });
 
-    // Trigger email notification to requester on request complete
-    const subject = 'Your request was just completed';
-    const body = 'Hi ${req.user.displayName} your request was just completed';
-    await sendEmail(request.createdBy.email, subject, body);
+    // email requester (fixed template string + signature)
+    await sendEmail({
+      to: request.createdBy.email,
+      subject: "Your request was just completed",
+      body: `Hi ${request.createdBy.displayName}, your request "${request.title}" was just marked complete.`,
+    });
 
     res.json(request);
   } catch (e) {
@@ -199,7 +226,7 @@ export async function markComplete(req, res, next) {
   }
 }
 
-// PATCH /requests/:id/confirm
+/** PATCH /api/v1/requests/:id/confirm */
 export async function confirmCompletion(req, res, next) {
   try {
     const { id } = req.params;
@@ -219,7 +246,7 @@ export async function confirmCompletion(req, res, next) {
     request.completedAt = new Date();
     await request.save();
 
-    // notify helper (acceptedBy)
+    // notify helper (acceptedBy/completedBy)
     if (request.completedBy) {
       await createNotification({
         recipientId: request.completedBy,
@@ -234,7 +261,7 @@ export async function confirmCompletion(req, res, next) {
   }
 }
 
-// PATCH /requests/:id/cancel
+/** PATCH /api/v1/requests/:id/cancel */
 export async function cancelAcceptance(req, res, next) {
   try {
     const { id } = req.params;
@@ -246,12 +273,12 @@ export async function cancelAcceptance(req, res, next) {
 
     if (!request) return res.status(404).json({ message: "Request not found" });
 
-    // Only the volunteer who accepted it can cancel
+    // only the volunteer who accepted it can cancel
     if (!request.acceptedBy || request.acceptedBy._id.toString() !== userId.toString()) {
       return res.status(403).json({ message: "You cannot cancel this request" });
     }
 
-    // Only cancel if it’s still in progress
+    // only cancel if in progress
     if (request.status !== "in_progress") {
       return res.status(400).json({ message: "Cannot cancel a request that is not in progress" });
     }
@@ -267,7 +294,7 @@ export async function cancelAcceptance(req, res, next) {
       message: `${req.user.displayName || req.user.email} canceled helping with "${request.title}". It's open again.`,
     });
 
-    // optional: email requester
+    // optional email to requester
     await sendEmail({
       to: request.createdBy.email,
       subject: "Helper canceled your request",
@@ -275,6 +302,43 @@ export async function cancelAcceptance(req, res, next) {
     });
 
     res.json(request);
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * GET /api/v1/requests/near
+ * lat, lng required; maxDistance optional (meters)
+ * accepts status, tag, category
+ */
+export async function getNearbyRequests(req, res, next) {
+  try {
+    const { lat, lng, maxDistance = 5000, status, tag, category } = req.query;
+    if (!(lat && lng) || !isFiniteNum(lat) || !isFiniteNum(lng)) {
+      return res.status(400).json({ message: "lat and lng are required" });
+    }
+
+    const md = Number(maxDistance);
+    const match = {};
+    if (status) match.status = status;
+    if (tag) match.category = tag;
+    if (category) match.category = category;
+
+    const results = await Request.aggregate([
+      {
+        $geoNear: {
+          near: { type: "Point", coordinates: [Number(lng), Number(lat)] },
+          distanceField: "distance",
+          spherical: true,
+          ...(Number.isFinite(md) ? { maxDistance: md } : {}),
+        },
+      },
+      { $match: match },
+      { $limit: 100 },
+    ]);
+
+    res.json({ results });
   } catch (e) {
     next(e);
   }

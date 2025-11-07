@@ -45,20 +45,89 @@ export default function Browse() {
     return () => { mounted = false; };
   }, []);
 
-  React.useEffect(() => {
-    let result = items;
+ React.useEffect(() => {
+  // local attribute filters
+  const applyLocalFilters = (baseList) => {
+    let result = baseList;
 
-    if (category) result = result.filter(r => r.category?.toLowerCase() === category.toLowerCase());
-    if (urgency) result = result.filter(r => r.urgency?.toLowerCase() === urgency.toLowerCase());
-    if (status) result = result.filter(r => r.status?.toLowerCase() === status.toLowerCase());
-    if (distance) {
-      const d = Number(distance);
-      result = result.filter(r => r.distance <= d);
+    if (category) {
+      result = result.filter(
+        (r) => r.category?.toLowerCase() === category.toLowerCase()
+      );
+    }
+    if (urgency) {
+      result = result.filter(
+        (r) => r.urgency?.toLowerCase() === urgency.toLowerCase()
+      );
+    }
+    if (status) {
+      result = result.filter(
+        (r) => r.status?.toLowerCase() === status.toLowerCase()
+      );
     }
 
-    setFilteredItems(result);
-    setCurrentPage(1); // reset to first page on filter change
-  }, [category, urgency, status, distance, items]);
+    return result;
+  };
+
+  // when distance is selected, fetch from backend using current location
+  const fetchWithDistance = () => {
+    const miles = Number(distance);
+    if (!miles || Number.isNaN(miles)) {
+      setFilteredItems(applyLocalFilters(items));
+      setCurrentPage(1);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const maxDistanceMeters = Math.round(miles * 1609.34);
+
+          // prefer a nearby endpoint if it exists, otherwise use list with params
+          let nearby = null;
+          if (typeof api.getNearbyRequests === "function") {
+            nearby = await api.getNearbyRequests(latitude, longitude, maxDistanceMeters);
+          } else if (typeof api.listRequests === "function") {
+            nearby = await api.listRequests({
+              lat: latitude,
+              lng: longitude,
+              maxDistance: maxDistanceMeters,
+              status: "open",
+            });
+          }
+
+          const list = Array.isArray(nearby?.results)
+            ? nearby.results
+            : Array.isArray(nearby)
+            ? nearby
+            : [];
+
+          setFilteredItems(applyLocalFilters(list));
+          setCurrentPage(1);
+        } catch (err) {
+          console.error("Nearby search failed:", err);
+          setFilteredItems(applyLocalFilters(items));
+          setCurrentPage(1);
+        }
+      },
+      (err) => {
+        console.warn("Geolocation failed/denied:", err);
+        setFilteredItems(applyLocalFilters(items));
+        setCurrentPage(1);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  if (distance) {
+    fetchWithDistance();
+  } else {
+    setFilteredItems(applyLocalFilters(items));
+    setCurrentPage(1);
+  }
+}, [category, urgency, status, distance, items]);
+
 
   const clearFilters = () => {
     setCategory("");

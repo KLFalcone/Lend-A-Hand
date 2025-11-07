@@ -13,19 +13,23 @@ const RequestSchema = new mongoose.Schema(
 
     urgency: { type: String, required: true, enum: ["low", "medium", "high"] },
 
-    // Address plus [lng, lat] for geospatial queries
-    location: {
-      address:     { type: String, required: true, trim: true },
-      coordinates: {
-        type: [Number],                  // [lng, lat]
-        index: "2dsphere",
-        default: undefined,              // omit if not provided
-        validate: {
-          validator: (v) => !v || (Array.isArray(v) && v.length === 2),
-          message: "coordinates must be [lng, lat]",
-        },
-      },
-    },
+    // GeoJSON location: used for geospatial queries ($near)
+location: {
+  type: {
+    type: String,
+    enum: ["Point"],
+    required: true
+  },
+  coordinates: {
+    type: [Number],
+    required: true
+  },
+  address: {
+    type: String,
+    trim: true
+  }
+},
+
 
     status: {
       type: String,
@@ -50,15 +54,24 @@ const RequestSchema = new mongoose.Schema(
 
 /**
  * Backward-compatibility shim:
- * If older payloads used location.coords.{lat,lng}, normalize to coordinates [lng, lat].
+ * If older payloads used location.coords.{lat,lng}, normalize to GeoJSON.
  */
 RequestSchema.pre("validate", function normalizeOldCoords(next) {
   const legacy = this?.location?.coords;
   if (legacy && typeof legacy.lat === "number" && typeof legacy.lng === "number") {
-    this.location.coordinates = [legacy.lng, legacy.lat];
-    this.location.coords = undefined;
+    this.location = {
+      type: "Point",
+      coordinates: [legacy.lng, legacy.lat],
+      address: this.location?.address,
+    };
+  } else if (!this.location?.type) {
+    // ensure type is present for new/edited docs
+    this.location = { ...this.location, type: "Point" };
   }
   next();
 });
+
+// Correct 2dsphere index on the GeoJSON object (not coordinates)
+RequestSchema.index({ location: "2dsphere" });
 
 export default mongoose.model("Request", RequestSchema);
