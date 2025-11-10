@@ -1,18 +1,15 @@
-/* Browse.css */
-
 .browse-container {
   padding: 2rem;
   max-width: 960px;
   margin: 0 auto;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #333;
+  color: var(--color-text-dark);
 }
 
 .browse-title {
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 1rem;
-  color: #1e3a8a; /* matches Home page title */
+  color: var(--color-primary-dark);
 }
 
 .filter-bar {
@@ -24,25 +21,33 @@
 
 .filter-bar select,
 .filter-bar button {
-  padding: 0.5rem 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  background-color: var(--color-bg-white);
 }
 
 .filter-bar select:focus,
 .filter-bar button:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
 }
 
 .filter-bar button:hover {
-  background-color: #f3f4f6;
+  background-color: var(--color-bg-light);
 }
 
-/* Requests list */
+.clear-bttn {
+  background-color: var(--color-primary)!important;
+  color: var(--color-text-light)!important;
+}
+
+.clear-bttn:hover {
+  background-color: var(--color-primary-hover)!important;
+}
+
 .request-list {
   display: grid;
   gap: 1rem;
@@ -53,13 +58,14 @@
 .request-item {
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   cursor: pointer;
   transition: all 0.2s ease;
+  background-color: var(--color-bg-white);
 }
 
 .request-item:hover {
-  background-color: #f9fafb;
+  background-color: var(--color-bg-light);
 }
 
 .request-item strong {
@@ -78,7 +84,6 @@
   opacity: 0.6;
 }
 
-/* Status badges */
 .status-badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
@@ -109,15 +114,6 @@
   color: #991b1b;
 }
 
-/* Responsive */
-@media (max-width: 640px) {
-  .filter-bar {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-}
-
-/* Pagination */
 .pagination {
   display: flex;
   justify-content: center;
@@ -129,14 +125,11 @@
 .pagination button {
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #d1d5db;
-  background-color: #fff;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-light);
+  color: var(--color-text-dark);
   cursor: pointer;
   transition: all 0.2s ease;
-}
-
-.pagination button:hover:not(:disabled) {
-  background-color: #f3f4f6;
 }
 
 .pagination button:disabled {
@@ -146,5 +139,12 @@
 
 .pagination span {
   font-weight: 500;
-  color: #4b5563;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 640px) {
+  .filter-bar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }
