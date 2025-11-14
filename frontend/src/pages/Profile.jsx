@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import AvatarPicker from "../components/AvatarPicker";
+import RequestDetailsModal from "../components/RequestDetailsModal";
 
 
 export default function Profile() {
@@ -27,6 +28,7 @@ export default function Profile() {
   // activity state
   const [overview, setOverview] = useState(null);
   const [overviewErr, setOverviewErr] = useState("");
+  const [showRequestModal, setShowRequestModal] = useState(false);
 
   // load profile
   useEffect(() => {
@@ -129,6 +131,15 @@ export default function Profile() {
             setDeleting(false);
         }
     };
+
+    const handleRequestClick = (e) => {
+      e.preventDefault(); 
+      setShowRequestModal(true);
+    };
+
+    const handleRequestClose = () => {
+      setShowRequestModal(false);
+    }
 
 
     if (loading) return <p style={{ padding: 16 }}>Loading profile...</p>;
@@ -384,9 +395,16 @@ export default function Profile() {
                 {overview.created.map((r) => (
                   <li key={r._id} style={{ display: "grid", gap: 4 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Link to={`/browse/posts/${r._id}`} style={{ fontWeight: 600 }}>
-                        {r.title || "Untitled Request"}
-                      </Link>
+                      {/* <Link to={`/browse/posts/${r._id}`} style={{ fontWeight: 600 }}> */}
+                       {r.title || "Untitled Request"}
+                      {/* </Link> */}
+                      <a href="#" onClick={handleRequestClick}>View Request Details</a>
+                      {showRequestModal && (
+                        <RequestDetailsModal 
+                        onClose={handleRequestClose}
+                        requestId = {r._id} />
+                    )}
+
                       <Badge status={r.status} />
                     </div>
                     <span style={{ color: "#667085", fontSize: 12 }}>
