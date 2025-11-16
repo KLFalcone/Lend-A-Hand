@@ -68,6 +68,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
       await api.cancelAcceptance(requestId);
       alert("❎ Request cancelled.");
       setReq((prev) => ({ ...prev, status: "open" }));
+      console.log("setReq complete");
       onStatusChange("open");
     } catch (e) {
       console.error(e);

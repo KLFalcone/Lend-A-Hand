@@ -25,6 +25,8 @@ export default function Profile() {
     profilePic: "",
   });
   const [selectedId, setSelectedId] = useState(null);
+  const [items, setItems] = React.useState([]);
+    const [filteredItems, setFilteredItems] = React.useState([]);
 
   // activity state
   const [overview, setOverview] = useState(null);
@@ -93,6 +95,20 @@ export default function Profile() {
         alive = false;
       };
     };
+
+  const updateStatus = (newStatus, requestId) => {
+    setItems(prev =>
+      prev.map(item =>
+        item._id === requestId || item.id === requestId ? { ...item, status: newStatus } : item
+      )
+    );
+    setFilteredItems(prev =>
+      prev.map(item =>
+        item._id === requestId || item.id === requestId ? { ...item, status: newStatus } : item
+      )
+    );
+    console.log(items, filteredItems);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -457,7 +473,8 @@ export default function Profile() {
               {showRequestModal && (
                 <RequestDetailsModal 
                 onClose={handleRequestClose}
-                requestId = {selectedId} /> 
+                requestId = {selectedId}
+                onStatusChange={(newStatus) => updateStatus(newStatus, selectedId)} /> 
             )}
             
           </Card>
