@@ -22,7 +22,7 @@ location: {
   },
   coordinates: {
     type: [Number],
-    required: true
+    required: false
   },
   address: {
     type: String,
