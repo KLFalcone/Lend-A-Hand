@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import AvatarPicker from "../components/AvatarPicker";
+import RequestDetailsModal from "../components/RequestDetailsModal";
 
 
 export default function Profile() {
@@ -23,10 +24,12 @@ export default function Profile() {
     availability: "",
     profilePic: "",
   });
+  const [selectedId, setSelectedId] = useState(null);
 
   // activity state
   const [overview, setOverview] = useState(null);
   const [overviewErr, setOverviewErr] = useState("");
+  const [showRequestModal, setShowRequestModal] = useState(false);
 
   // load profile
   useEffect(() => {
@@ -59,20 +62,37 @@ export default function Profile() {
   }, [navigate]);
 
   // load activity overview
+  // useEffect(() => {
+  //   let alive = true;
+  //   (async () => {
+  //     try {
+  //       const json = await api.meOverview(); // /api/v1/me/overview
+  //       if (alive) setOverview(json);
+  //     } catch (e) {
+  //       if (alive) setOverviewErr(e.message || "Failed to load your requests.");
+  //     }
+  //   })();
+  //   return () => {
+  //     alive = false;
+  //   };
+  // }, []);
+
   useEffect(() => {
+    fetchOverview();
+  }, []);
+
+  const fetchOverview = async () => {
     let alive = true;
-    (async () => {
-      try {
+    try {
         const json = await api.meOverview(); // /api/v1/me/overview
         if (alive) setOverview(json);
       } catch (e) {
         if (alive) setOverviewErr(e.message || "Failed to load your requests.");
       }
-    })();
-    return () => {
-      alive = false;
+      return () => {
+        alive = false;
+      };
     };
-  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -129,6 +149,17 @@ export default function Profile() {
             setDeleting(false);
         }
     };
+
+    const handleRequestClick = (e, id) => {
+      e.preventDefault(); 
+      setSelectedId(id);
+      setShowRequestModal(true);
+    };
+
+    const handleRequestClose = () => {
+      setShowRequestModal(false);
+      fetchOverview();
+    }
 
 
     if (loading) return <p style={{ padding: 16 }}>Loading profile...</p>;
@@ -384,9 +415,7 @@ export default function Profile() {
                 {overview.created.map((r) => (
                   <li key={r._id} style={{ display: "grid", gap: 4 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Link to={`/browse/posts/${r._id}`} style={{ fontWeight: 600 }}>
-                        {r.title || "Untitled Request"}
-                      </Link>
+                      <a href="#" onClick={(e) => handleRequestClick(e, r._id)}>{r.title || "Untitled Request"}</a>
                       <Badge status={r.status} />
                     </div>
                     <span style={{ color: "#667085", fontSize: 12 }}>
@@ -395,7 +424,13 @@ export default function Profile() {
                   </li>
                 ))}
               </ul>
-            )}
+              )}
+              {showRequestModal && (
+                        <RequestDetailsModal 
+                        onClose={handleRequestClose}
+                        requestId = {selectedId} />
+              )}   
+          
           </Card>
 
           <Card>
@@ -409,9 +444,7 @@ export default function Profile() {
                 {overview.accepted.map((r) => (
                   <li key={r._id} style={{ display: "grid", gap: 4 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Link to={`/browse/posts/${r._id}`} style={{ fontWeight: 600 }}>
-                        {r.title || "Untitled Request"}
-                      </Link>
+                      <a href="#" onClick={(e) => handleRequestClick(e, r._id)}>{r.title || "Untitled Request"}</a>                   
                       <Badge status={r.status} />
                     </div>
                     <span style={{ color: "#667085", fontSize: 12 }}>
@@ -421,6 +454,12 @@ export default function Profile() {
                 ))}
               </ul>
             )}
+              {showRequestModal && (
+                <RequestDetailsModal 
+                onClose={handleRequestClose}
+                requestId = {selectedId} /> 
+            )}
+            
           </Card>
         </div>
       </div>
