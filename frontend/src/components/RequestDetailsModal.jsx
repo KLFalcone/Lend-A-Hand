@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
 
+
 export default function RequestDetailsModal({ requestId, onClose, onStatusChange }) {
   const [req, setReq] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +46,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
   async function handleAccept() {
     if (!requestId) return;
     try {
-      setBusy(true);
+      setBusy('accept');
       await api.acceptRequest(requestId);
       alert("✅ Request accepted!");
       // update local state so it shows new status
@@ -63,7 +64,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
     if (!requestId) return;
     if (!window.confirm("Cancel your acceptance of this request?")) return;
     try {
-      setBusy(true);
+      setBusy('cancel');
       await api.cancelAcceptance(requestId);
       alert("❎ Request cancelled.");
       setReq((prev) => ({ ...prev, status: "open" }));
@@ -113,6 +114,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
   const status = req?.status || "open";
 
   // dynamic button visibility
+  // eslint-disable-next-line no-unused-vars
   const showAccept = status === "open";
   const showCancel = status === "in_progress";
   const showMarkComplete = status === "in_progress";
@@ -190,7 +192,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
                   cursor: busy ? "wait" : "pointer",
                 }}
               >
-                {busy
+                {busy === 'accept'
                   ? "Accepting..."
                   : req?.status === "open"
                   ? "Accept"
@@ -210,7 +212,9 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
                     cursor: busy ? "wait" : "pointer",
                   }}
                 >
-                  Cancel
+                  {busy === 'cancel'
+                  ? "Cancelling..."
+                  : "Cancel"}
                 </button>
               )}
 
