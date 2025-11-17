@@ -1,17 +1,19 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
 
-
 export default function RequestDetailsModal({ requestId, onClose, onStatusChange }) {
   const [req, setReq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false); //updated to be used for more than just Accept
+  const [busy, setBusy] = useState(false); // updated to be used for more than just Accept
   const dialogRef = useRef(null);
+
   console.log("onStatusChange prop:", onStatusChange);
+
   useEffect(() => {
     if (!requestId) return;
     let mounted = true;
+
     (async () => {
       try {
         setLoading(true);
@@ -23,12 +25,17 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
         if (mounted) setLoading(false);
       }
     })();
-    return () => { mounted = false; };
+
+    return () => {
+      mounted = false;
+    };
   }, [requestId]);
 
   // ESC to close
   useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose?.();
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
@@ -42,37 +49,37 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
     return () => prev && prev.focus && prev.focus();
   }, []);
 
-  // ✅ handle Accept button click
+  // handle Accept button click
   async function handleAccept() {
     if (!requestId) return;
     try {
-      setBusy('accept');
+      setBusy("accept");
       await api.acceptRequest(requestId);
-      alert("✅ Request accepted!");
+      alert("Request accepted!");
       // update local state so it shows new status
       setReq((prev) => ({ ...prev, status: "in_progress" })); // set to in progress as stated in Issue #30
       onStatusChange("in_progress");
     } catch (e) {
       console.error(e);
-      alert("❌ Failed to accept request. You may need to log in.");
+      alert("Failed to accept request. You may need to log in.");
     } finally {
       setBusy(false);
     }
   }
 
-    async function handleCancel() {
+  async function handleCancel() {
     if (!requestId) return;
     if (!window.confirm("Cancel your acceptance of this request?")) return;
     try {
-      setBusy('cancel');
+      setBusy("cancel");
       await api.cancelAcceptance(requestId);
-      alert("❎ Request cancelled.");
+      alert("Request cancelled.");
       setReq((prev) => ({ ...prev, status: "open" }));
       console.log("setReq complete");
       onStatusChange("open");
     } catch (e) {
       console.error(e);
-      alert("❌ Failed to cancel request.");
+      alert("Failed to cancel request.");
     } finally {
       setBusy(false);
     }
@@ -83,12 +90,12 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
     try {
       setBusy(true);
       await api.markComplete(requestId);
-      alert("✅ Marked as complete! Awaiting requester confirmation.");
+      alert("Marked as complete! Awaiting requester confirmation.");
       setReq((prev) => ({ ...prev, status: "pending_confirmation" }));
       onStatusChange("pending_confirmation");
     } catch (e) {
       console.error(e);
-      alert("❌ Failed to mark complete. You may not be authorized.");
+      alert("Failed to mark complete. You may not be authorized.");
     } finally {
       setBusy(false);
     }
@@ -99,12 +106,34 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
     try {
       setBusy(true);
       await api.confirmCompletion(requestId);
-      alert("🎉 Request confirmed and closed!");
+      alert("Request confirmed and closed!");
       setReq((prev) => ({ ...prev, status: "closed" }));
       onStatusChange("closed");
     } catch (e) {
       console.error(e);
-      alert("❌ Failed to confirm completion.");
+      alert("Failed to confirm completion.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  //delete / cancel request entirely
+  async function handleDeleteRequest() {
+    if (!requestId) return;
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this request?"
+    );
+    if (!confirmed) return;
+
+    try {
+      setBusy("delete");
+      await api.deleteRequest(requestId);
+      alert("Request deleted.");
+      onStatusChange?.("deleted"); // parent can refresh list
+      onClose?.();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete request.");
     } finally {
       setBusy(false);
     }
@@ -120,6 +149,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
   const showCancel = status === "in_progress";
   const showMarkComplete = status === "in_progress";
   const showConfirm = status === "pending_confirmation";
+  const showDelete = status === "open"; // delete only while still open
 
   return (
     <div
@@ -135,7 +165,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
         alignItems: "flex-start",
         justifyContent: "center",
         paddingTop: "6vh",
-        zIndex: 1000
+        zIndex: 1000,
       }}
     >
       <div
@@ -150,7 +180,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
           overflow: "auto",
           padding: 16,
           borderRadius: 10,
-          boxShadow: "0 10px 30px rgba(0,0,0,.20)"
+          boxShadow: "0 10px 30px rgba(0,0,0,.20)",
         }}
       >
         {loading ? (
@@ -171,15 +201,19 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
             </p>
 
             <div style={{ marginTop: 8, lineHeight: 1.5 }}>
-              <div><b>Location:</b> {req?.location?.address || "—"}</div>
+              <div>
+                <b>Location:</b> {req?.location?.address || "—"}
+              </div>
               <div>
                 <b>Posted by:</b>{" "}
                 {req?.createdBy?.displayName || req?.createdBy?.email || "—"}
               </div>
-              <div><b>Status:</b> {req?.status || "open"}</div>
+              <div>
+                <b>Status:</b> {req?.status || "open"}
+              </div>
             </div>
 
-            <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+            <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
               {/* Accept now works */}
               <button
                 onClick={handleAccept}
@@ -193,7 +227,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
                   cursor: busy ? "wait" : "pointer",
                 }}
               >
-                {busy === 'accept'
+                {busy === "accept"
                   ? "Accepting..."
                   : req?.status === "open"
                   ? "Accept"
@@ -213,9 +247,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
                     cursor: busy ? "wait" : "pointer",
                   }}
                 >
-                  {busy === 'cancel'
-                  ? "Cancelling..."
-                  : "Cancel"}
+                  {busy === "cancel" ? "Cancelling..." : "Cancel"}
                 </button>
               )}
 
@@ -251,11 +283,33 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
                 >
                   Confirm Completion
                 </button>
-              )}              
+              )}
+
+              {showDelete && (
+                <button
+                  onClick={handleDeleteRequest}
+                  disabled={busy}
+                  style={{
+                    background: "#b00020",
+                    color: "#fff",
+                    border: "none",
+                    padding: "8px 14px",
+                    borderRadius: 6,
+                    cursor: busy ? "wait" : "pointer",
+                    marginLeft: "auto",
+                  }}
+                >
+                  {busy === "delete" ? "Deleting..." : "Delete Request"}
+                </button>
+              )}
 
               {/* other actions still disabled for now */}
-              <button disabled title="Coming soon">Message</button>
-              <button disabled title="Coming soon">Report</button>
+              <button disabled title="Coming soon">
+                Message
+              </button>
+              <button disabled title="Coming soon">
+                Report
+              </button>
               <button onClick={onClose}>Close</button>
             </div>
           </>
