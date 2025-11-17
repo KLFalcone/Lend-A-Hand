@@ -5,11 +5,13 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
   const [req, setReq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false); // updated to be used for more than just Accept
+  const [busy, setBusy] = useState(false); // used for Accept / Cancel / Delete etc.
+  const [currentUser, setCurrentUser] = useState(null);
   const dialogRef = useRef(null);
 
   console.log("onStatusChange prop:", onStatusChange);
 
+  // load request details
   useEffect(() => {
     if (!requestId) return;
     let mounted = true;
@@ -30,6 +32,28 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
       mounted = false;
     };
   }, [requestId]);
+
+  // load current user (for permissions like delete / report)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const me = await api.me();
+        // handle both shapes: { user: {...} } or plain user
+        const user = me?.user || me;
+        if (mounted) {
+          setCurrentUser(user || null);
+          console.log("RequestDetailsModal currentUser:", user);
+        }
+      } catch (e) {
+        console.error("api.me() failed in RequestDetailsModal:", e);
+        if (mounted) setCurrentUser(null);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // ESC to close
   useEffect(() => {
@@ -117,7 +141,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
     }
   }
 
-  //delete / cancel request entirely
+  // delete / cancel request entirely
   async function handleDeleteRequest() {
     if (!requestId) return;
     const confirmed = window.confirm(
@@ -139,17 +163,48 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
     }
   }
 
+  // report / flag the request for admins
+  async function handleReport() {
+    if (!requestId) return;
+    const confirmed = window.confirm(
+      "Report this request to the admins as inappropriate or concerning?"
+    );
+    if (!confirmed) return;
+
+    try {
+      setBusy("report");
+      await api.reportRequest(requestId); // new helper in api.js
+      alert("Thanks, your report has been sent to the admins.");
+      setReq((prev) => ({ ...prev, flagged: true }));
+    } catch (e) {
+      console.error(e);
+      alert("Failed to report request. You may need to log in.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!requestId) return null;
 
   const status = req?.status || "open";
 
   // dynamic button visibility
-  // eslint-disable-next-line no-unused-vars
   const showAccept = status === "open";
   const showCancel = status === "in_progress";
   const showMarkComplete = status === "in_progress";
   const showConfirm = status === "pending_confirmation";
-  const showDelete = status === "open"; // delete only while still open
+  const showDeleteWhileOpen = status === "open"; // only deletable while open
+
+  // permission check for delete: admin OR owner
+  const isOwner =
+    currentUser &&
+    req &&
+    currentUser._id === (req.createdBy?._id || req.createdBy);
+  const isAdmin = currentUser && currentUser.role === "admin";
+  const canDelete = showDeleteWhileOpen && (isOwner || isAdmin);
+
+  // permission for report: must be logged in and NOT the owner
+  const canReport = !!currentUser && !isOwner;
 
   return (
     <div
@@ -211,13 +266,28 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
               <div>
                 <b>Status:</b> {req?.status || "open"}
               </div>
+              {req?.flagged && (
+                <div>
+                  <b>Flagged:</b>{" "}
+                  <span style={{ color: "#b45309", fontWeight: 600 }}>
+                    This request has been reported.
+                  </span>
+                </div>
+              )}
             </div>
 
-            <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {/* Accept now works */}
+            <div
+              style={{
+                marginTop: 16,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              {/* Accept */}
               <button
                 onClick={handleAccept}
-                disabled={busy || req?.status !== "open"}
+                disabled={busy || !showAccept}
                 style={{
                   background: "#007bff",
                   color: "#fff",
@@ -285,7 +355,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
                 </button>
               )}
 
-              {showDelete && (
+              {canDelete && (
                 <button
                   onClick={handleDeleteRequest}
                   disabled={busy}
@@ -303,13 +373,29 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
                 </button>
               )}
 
-              {/* other actions still disabled for now */}
+              {/* Message still a placeholder */}
               <button disabled title="Coming soon">
                 Message
               </button>
-              <button disabled title="Coming soon">
-                Report
-              </button>
+
+              {/* Report: only for non-owners */}
+              {canReport && (
+                <button
+                  onClick={handleReport}
+                  disabled={busy}
+                  style={{
+                    background: "#6c757d",
+                    color: "#fff",
+                    border: "none",
+                    padding: "8px 14px",
+                    borderRadius: 6,
+                    cursor: busy ? "wait" : "pointer",
+                  }}
+                >
+                  {busy === "report" ? "Reporting..." : "Report"}
+                </button>
+              )}
+
               <button onClick={onClose}>Close</button>
             </div>
           </>

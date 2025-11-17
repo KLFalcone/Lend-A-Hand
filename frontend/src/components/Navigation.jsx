@@ -15,7 +15,7 @@ export default function Navigation() {
   const localName = (localStorage.getItem("displayName") || "").trim();
   const optimisticUser = localName ? { displayName: localName } : null;
 
-  // ✅ fetch actual user data on route change
+  // fetch actual user data on route change
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -26,10 +26,12 @@ export default function Navigation() {
         if (alive) setUser(null);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [pathname]);
 
-  // ✅ listen for global auth changes (Login/Register triggers this)
+  // listen for global auth changes (Login/Register triggers this)
   useEffect(() => {
     const onAuthChanged = async () => {
       try {
@@ -57,6 +59,8 @@ export default function Navigation() {
   }
 
   const effectiveUser = user || optimisticUser;
+  const isAdmin = user?.role === "admin"; // only trust real user from API
+
   const isActive = (path) =>
     pathname === path || pathname.startsWith(path + "/") ? "selected-nav" : "";
 
@@ -66,9 +70,25 @@ export default function Navigation() {
     "User";
 
   const links = [
-    <Link key="home" to="/" className={isActive("/")}>Home</Link>,
-    <Link key="browse" to="/browse" className={isActive("/browse")}>Browse</Link>,
-    <Link key="post" to="/post" className={isActive("/post")}>Post</Link>,
+    <Link key="home" to="/" className={isActive("/")}>
+      Home
+    </Link>,
+    <Link key="browse" to="/browse" className={isActive("/browse")}>
+      Browse
+    </Link>,
+
+    // For admins: show Admin instead of Post
+    effectiveUser &&
+      (isAdmin ? (
+        <Link key="admin" to="/admin" className={isActive("/admin")}>
+          Admin
+        </Link>
+      ) : (
+        <Link key="post" to="/post" className={isActive("/post")}>
+          Post
+        </Link>
+      )),
+
     effectiveUser && (
       <Link key="profile" to="/profile" className={isActive("/profile")}>
         My Profile
@@ -90,7 +110,9 @@ export default function Navigation() {
     <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <NotificationBell />
       <span className="welcome-text">Welcome, {displayName}!</span>
-      <button className="logout-btn" onClick={handleLogout}>Logout</button>
+      <button className="logout-btn" onClick={handleLogout}>
+        Logout
+      </button>
     </span>
   ) : null;
 

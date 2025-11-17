@@ -174,9 +174,27 @@ export async function update(req, res, next) {
 /** DELETE /api/v1/requests/:id (auth required) */
 export async function remove(req, res, next) {
   try {
-    const doc = await Request.findByIdAndDelete(req.params.id);
-    if (!doc) return res.status(404).json({ message: "not found" });
-    res.status(204).end();
+    const { id } = req.params;
+
+    const doc = await Request.findById(id);
+    if (!doc) {
+      return res.status(404).json({ message: "not found" });
+    }
+
+    const userId = req.user?._id?.toString();
+    const isAdmin = req.user?.role === "admin";
+    const isOwner =
+      userId && doc.createdBy && doc.createdBy.toString() === userId;
+
+    // only the owner or an admin can delete
+    if (!isAdmin && !isOwner) {
+      return res
+        .status(403)
+        .json({ message: "You are not allowed to delete this request" });
+    }
+
+    await doc.deleteOne();
+    return res.status(200).json({ message: "Request deleted" });
   } catch (e) {
     next(e);
   }

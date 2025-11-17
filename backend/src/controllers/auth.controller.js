@@ -41,8 +41,6 @@ export async function register(req, res, next) {
         displayName: user.displayName,
         role: user.role,
         address: user.address ?? '',
-        phone: user.phone ?? '',
-        availability: user.availability ?? '',
         profilePic: user.profilePic ?? '',
       },
     });
