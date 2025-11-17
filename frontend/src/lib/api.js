@@ -169,5 +169,4 @@ export const api = {
         deleteRequest: (id) =>
             apiFetch(`/api/v1/admin/requests/${id}`, { method: 'DELETE' }),
     },
-    apiFetch("/api/v1/notifications/read-all", { method: "PATCH" }),
 };
