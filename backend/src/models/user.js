@@ -43,6 +43,33 @@ const userSchema = new mongoose.Schema(
     },
     availability: { type: String, default: "", trim: true, maxlength: 200 },
     profilePic: { type: String, default: "", trim: true, maxlength: 500 },
+
+    // --- feedback received as a helper ---
+    feedbackReceived: [
+      {
+        request: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Request",
+        },
+        from: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        rating: {
+          type: String,
+          enum: ["helpful", "not_helpful"],
+        },
+        comment: {
+          type: String,
+          trim: true,
+          maxlength: 1000,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

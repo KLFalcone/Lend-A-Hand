@@ -17,6 +17,9 @@ r.patch("/:id/complete", auth, ctrl.markComplete);
 r.patch("/:id/confirm", auth, ctrl.confirmCompletion);
 r.patch("/:id/cancel", auth, ctrl.cancelAcceptance);
 
+// feedback (auth required, requester only – enforced in controller)
+r.post("/:id/feedback", auth, ctrl.submitFeedback);
+
 // delete (auth + owner/admin checked inside controller)
 r.delete("/:id", auth, ctrl.remove);
 

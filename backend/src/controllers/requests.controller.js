@@ -1,4 +1,5 @@
 import Request from "../models/request.js";
+import User from "../models/user.js";
 import { createNotification } from "./notifications.controller.js";
 import { sendEmail } from "../services/emailService.js";
 
@@ -448,6 +449,110 @@ export async function getNearbyRequests(req, res, next) {
       .slice(0, 100);
 
     res.json({ results });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * POST /api/v1/requests/:id/feedback
+ * Body: { rating: "helpful" | "not_helpful", comment?: string }
+ * Only the requester can leave feedback, and only once, after the request is closed.
+ */
+export async function submitFeedback(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { rating, comment } = req.body || {};
+    const allowedRatings = ["helpful", "not_helpful"];
+
+    if (!allowedRatings.includes(rating)) {
+      return res.status(400).json({ message: "Invalid rating value" });
+    }
+
+    const request = await Request.findById(id);
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    // Only requester can submit feedback
+    if (req.user._id.toString() !== request.createdBy.toString()) {
+      return res
+        .status(403)
+        .json({ message: "Only the requester can submit feedback" });
+    }
+
+    // Only after request is closed
+    if (request.status !== "closed") {
+      return res
+        .status(400)
+        .json({ message: "Feedback can only be left after the request is closed" });
+    }
+
+    // Prevent multiple feedbacks from same user on same request
+    const existing =
+      request.feedback &&
+      request.feedback.find(
+        (f) => f.from && f.from.toString() === req.user._id.toString()
+      );
+    if (existing) {
+      return res
+        .status(400)
+        .json({ message: "Feedback already submitted for this request" });
+    }
+
+    const feedbackEntry = {
+      from: req.user._id,
+      rating,
+      comment: comment || "",
+      createdAt: new Date(),
+    };
+
+    if (!Array.isArray(request.feedback)) {
+      request.feedback = [];
+    }
+    request.feedback.push(feedbackEntry);
+    await request.save();
+
+    // Also store summary on the helper's user record, if we know who helped
+    const helperId = request.completedBy || request.acceptedBy;
+    if (helperId) {
+      await User.findByIdAndUpdate(helperId, {
+        $push: {
+          feedbackReceived: {
+            request: request._id,
+            from: req.user._id,
+            rating,
+            comment: comment || "",
+            createdAt: new Date(),
+          },
+        },
+      }).catch((err) => {
+        console.error("Failed to push feedbackReceived on user:", err?.message);
+      });
+    }
+
+    // Optional: notify helper they got feedback
+    if (helperId) {
+      try {
+        await createNotification({
+          recipientId: helperId,
+          type: "request_feedback",
+          message: `${
+            req.user.displayName || req.user.email
+          } left feedback on "${request.title}".`,
+        });
+      } catch (notifyErr) {
+        console.error(
+          "Failed to create feedback notification:",
+          notifyErr?.message
+        );
+      }
+    }
+
+    return res.status(201).json({
+      message: "Feedback submitted",
+      request,
+    });
   } catch (e) {
     next(e);
   }

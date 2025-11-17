@@ -135,7 +135,7 @@ export const api = {
   getNearbyRequests: (lat, lng, miles) =>
     apiFetch(`/api/v1/requests/near?lat=${lat}&lng=${lng}&maxDistance=${miles}`),
 
-  // NEW: report / flag a request (used by RequestDetailsModal)
+  // report / flag a request (used by RequestDetailsModal)
   reportRequest: (id) =>
     apiFetch(`/api/v1/requests/${id}`, {
       method: "PATCH",
@@ -150,6 +150,13 @@ export const api = {
 
   markAllNotificationsRead: () =>
     apiFetch("/api/v1/notifications/read-all", { method: "PATCH" }),
+
+  // submit feedback after a request is closed
+  submitFeedback: (requestId, rating, comment) =>
+    apiFetch(`/api/v1/requests/${requestId}/feedback`, {
+      method: "POST",
+      body: JSON.stringify({ rating, comment }),
+    }),
 
   // --- admin ---
   admin: {

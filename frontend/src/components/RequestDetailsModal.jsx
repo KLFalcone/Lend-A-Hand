@@ -1,12 +1,19 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
+import FeedbackModal from "./FeedbackModal.jsx";
 
-export default function RequestDetailsModal({ requestId, onClose, onStatusChange }) {
+export default function RequestDetailsModal({
+  requestId,
+  onClose,
+  onStatusChange,
+}) {
   const [req, setReq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false); // used for Accept / Cancel / Delete etc.
+  const [busy, setBusy] = useState(false); // used for Accept / Cancel / Delete / Report etc.
   const [currentUser, setCurrentUser] = useState(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+
   const dialogRef = useRef(null);
 
   console.log("onStatusChange prop:", onStatusChange);
@@ -81,7 +88,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
       await api.acceptRequest(requestId);
       alert("Request accepted!");
       // update local state so it shows new status
-      setReq((prev) => ({ ...prev, status: "in_progress" })); // set to in progress as stated in Issue #30
+      setReq((prev) => ({ ...prev, status: "in_progress" })); // Issue #30 behavior
       onStatusChange("in_progress");
     } catch (e) {
       console.error(e);
@@ -133,11 +140,27 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
       alert("Request confirmed and closed!");
       setReq((prev) => ({ ...prev, status: "closed" }));
       onStatusChange("closed");
+
+      // after confirmation, prompt for feedback
+      setShowFeedback(true);
     } catch (e) {
       console.error(e);
       alert("Failed to confirm completion.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleFeedbackSubmit({ rating, comment }) {
+    if (!requestId) return;
+    try {
+      await api.submitFeedback(requestId, rating, comment);
+      alert("Thanks for your feedback!");
+    } catch (e) {
+      console.error(e);
+      alert("Sorry, we couldn't save your feedback.");
+    } finally {
+      setShowFeedback(false);
     }
   }
 
@@ -173,7 +196,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
 
     try {
       setBusy("report");
-      await api.reportRequest(requestId); // new helper in api.js
+      await api.reportRequest(requestId); // helper in api.js
       alert("Thanks, your report has been sent to the admins.");
       setReq((prev) => ({ ...prev, flagged: true }));
     } catch (e) {
@@ -187,6 +210,9 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
   if (!requestId) return null;
 
   const status = req?.status || "open";
+  const prettyStatus = status.replace("_", " ");
+  const helperName =
+    req?.acceptedBy?.displayName || req?.acceptedBy?.email || null;
 
   // dynamic button visibility
   const showAccept = status === "open";
@@ -223,6 +249,7 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
         zIndex: 1000,
       }}
     >
+      {/* main dialog card */}
       <div
         onClick={(e) => e.stopPropagation()}
         ref={dialogRef}
@@ -261,10 +288,20 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
               </div>
               <div>
                 <b>Posted by:</b>{" "}
-                {req?.createdBy?.displayName || req?.createdBy?.email || "—"}
+                {req?.createdBy?.displayName ||
+                  req?.createdBy?.email ||
+                  "—"}
               </div>
               <div>
-                <b>Status:</b> {req?.status || "open"}
+                <b>Status:</b> {prettyStatus}
+                {helperName && (
+                  <>
+                    {" • "}
+                    <span>
+                      Helper: <b>{helperName}</b>
+                    </span>
+                  </>
+                )}
               </div>
               {req?.flagged && (
                 <div>
@@ -401,6 +438,13 @@ export default function RequestDetailsModal({ requestId, onClose, onStatusChange
           </>
         )}
       </div>
+
+      {/* Feedback popup after completion confirmation */}
+      <FeedbackModal
+        show={showFeedback}
+        onClose={() => setShowFeedback(false)}
+        onSubmit={handleFeedbackSubmit}
+      />
     </div>
   );
 }
