@@ -121,4 +121,30 @@ export const api = {
     apiFetch(`/api/v1/notifications/${id}/read`, { method: 'PATCH' }),
   markAllNotificationsRead: () =>
     apiFetch('/api/v1/notifications/read-all', { method: 'PATCH' }),
+
+// --- admin ---
+    admin: {
+        // User management
+        getAllUsers: () => apiFetch('/api/v1/admin/users'),
+        updateUser: (id, updates) =>
+            apiFetch(`/api/v1/admin/users/${id}`, {
+                method: 'PATCH',
+                body: JSON.stringify(updates),
+            }),
+        deleteUser: (id) =>
+            apiFetch(`/api/v1/admin/users/${id}`, { method: 'DELETE' }),
+
+        // Request management
+        getAllRequests: (params = {}) => {
+            const qs = new URLSearchParams(params).toString();
+            return apiFetch(`/api/v1/admin/requests${qs ? `?${qs}` : ''}`);
+        },
+        updateRequest: (id, updates) =>
+            apiFetch(`/api/v1/admin/requests/${id}`, {
+                method: 'PATCH',
+                body: JSON.stringify(updates),
+            }),
+        deleteRequest: (id) =>
+            apiFetch(`/api/v1/admin/requests/${id}`, { method: 'DELETE' }),
+    },
 };

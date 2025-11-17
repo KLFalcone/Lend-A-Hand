@@ -48,6 +48,11 @@ location: {
     completedAt: { type: Date },
 
     tags: { type: [String], default: [] },
+
+      flagged: {
+          type: Boolean,
+          default: false
+      },
   },
   { timestamps: true }
 );
