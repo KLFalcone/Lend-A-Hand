@@ -7,6 +7,27 @@ const toNum = (v) => (v === undefined ? undefined : Number(v));
 const isFiniteNum = (v) => Number.isFinite(toNum(v));
 
 /**
+ * Haversine distance between two lat/lng points in meters
+ */
+function distanceMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000; // earth radius in meters
+  const toRad = (d) => (d * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
  * GET /api/v1/requests
  * Query params:
  *   status=open
@@ -31,15 +52,39 @@ export async function list(req, res, next) {
       isFiniteNum(lng) &&
       isFiniteNum(maxDistance);
 
+    // If we have geo filters, do manual distance filtering in Node
     if (hasGeo) {
-      q.location = {
-        $near: {
-          $geometry: { type: "Point", coordinates: [Number(lng), Number(lat)] },
-          $maxDistance: Number(maxDistance), // meters
-        },
-      };
+      const latNum = Number(lat);
+      const lngNum = Number(lng);
+      const maxDistNum = Number(maxDistance);
+
+      const docs = await Request.find(q)
+        .sort({ createdAt: -1 })
+        .populate("createdBy", "displayName email")
+        .populate("acceptedBy", "displayName email")
+        .lean();
+
+      const filtered = docs.filter((doc) => {
+        const coords = doc.location?.coordinates;
+        if (
+          !coords ||
+          !Array.isArray(coords) ||
+          coords.length < 2 ||
+          !isFiniteNum(coords[0]) ||
+          !isFiniteNum(coords[1])
+        ) {
+          return false;
+        }
+
+        const [lng2, lat2] = coords;
+        const d = distanceMeters(latNum, lngNum, lat2, lng2);
+        return d <= maxDistNum;
+      });
+
+      return res.json(filtered);
     }
 
+    // No geo filters: regular query
     const items = await Request.find(q)
       .sort({ createdAt: -1 })
       .populate("createdBy", "displayName email")
@@ -147,11 +192,15 @@ export async function acceptRequest(req, res, next) {
     if (!request) return res.status(404).json({ message: "Request not found" });
 
     if (request.status !== "open" && request.acceptedBy) {
-      return res.status(400).json({ message: "Request already accepted or closed" });
+      return res
+        .status(400)
+        .json({ message: "Request already accepted or closed" });
     }
 
     if (String(request.createdBy) === String(userId)) {
-      return res.status(400).json({ message: "You cannot accept your own request" });
+      return res
+        .status(400)
+        .json({ message: "You cannot accept your own request" });
     }
 
     request.status = "in_progress";
@@ -162,7 +211,9 @@ export async function acceptRequest(req, res, next) {
     await createNotification({
       recipientId: request.createdBy,
       type: "request_accepted",
-      message: `${req.user.displayName || req.user.email} accepted your request "${request.title}".`,
+      message: `${
+        req.user.displayName || req.user.email
+      } accepted your request "${request.title}".`,
     });
 
     // email accepter
@@ -191,11 +242,16 @@ export async function markComplete(req, res, next) {
   try {
     const { id } = req.params;
 
-    const request = await Request.findById(id).populate("createdBy", "displayName email");
+    const request = await Request.findById(id).populate(
+      "createdBy",
+      "displayName email"
+    );
     if (!request) return res.status(404).json({ message: "Request not found" });
 
     if (req.user._id.toString() === request.createdBy._id.toString()) {
-      return res.status(403).json({ message: "Requester cannot mark their own request complete" });
+      return res.status(403).json({
+        message: "Requester cannot mark their own request complete",
+      });
     }
 
     if (request.status === "closed") {
@@ -210,10 +266,12 @@ export async function markComplete(req, res, next) {
     await createNotification({
       recipientId: request.createdBy._id,
       type: "request_pending_confirmation",
-      message: `${req.user.displayName || req.user.email} marked your request "${request.title}" as complete. Please confirm.`,
+      message: `${
+        req.user.displayName || req.user.email
+      } marked your request "${request.title}" as complete. Please confirm.`,
     });
 
-    // email requester (fixed template string + signature)
+    // email requester
     await sendEmail({
       to: request.createdBy.email,
       subject: "Your request was just completed",
@@ -231,15 +289,22 @@ export async function confirmCompletion(req, res, next) {
   try {
     const { id } = req.params;
 
-    const request = await Request.findById(id).populate("createdBy", "displayName email");
+    const request = await Request.findById(id).populate(
+      "createdBy",
+      "displayName email"
+    );
     if (!request) return res.status(404).json({ message: "Request not found" });
 
     if (req.user._id.toString() !== request.createdBy._id.toString()) {
-      return res.status(403).json({ message: "Only the requester can confirm completion" });
+      return res.status(403).json({
+        message: "Only the requester can confirm completion",
+      });
     }
 
     if (request.status !== "pending_confirmation") {
-      return res.status(400).json({ message: "Request is not pending confirmation" });
+      return res
+        .status(400)
+        .json({ message: "Request is not pending confirmation" });
     }
 
     request.status = "closed";
@@ -251,7 +316,9 @@ export async function confirmCompletion(req, res, next) {
       await createNotification({
         recipientId: request.completedBy,
         type: "request_closed",
-        message: `${req.user.displayName || req.user.email} confirmed completion of "${request.title}".`,
+        message: `${
+          req.user.displayName || req.user.email
+        } confirmed completion of "${request.title}".`,
       });
     }
 
@@ -274,13 +341,20 @@ export async function cancelAcceptance(req, res, next) {
     if (!request) return res.status(404).json({ message: "Request not found" });
 
     // only the volunteer who accepted it can cancel
-    if (!request.acceptedBy || request.acceptedBy._id.toString() !== userId.toString()) {
-      return res.status(403).json({ message: "You cannot cancel this request" });
+    if (
+      !request.acceptedBy ||
+      request.acceptedBy._id.toString() !== userId.toString()
+    ) {
+      return res
+        .status(403)
+        .json({ message: "You cannot cancel this request" });
     }
 
     // only cancel if in progress
     if (request.status !== "in_progress") {
-      return res.status(400).json({ message: "Cannot cancel a request that is not in progress" });
+      return res.status(400).json({
+        message: "Cannot cancel a request that is not in progress",
+      });
     }
 
     request.acceptedBy = undefined;
@@ -291,14 +365,18 @@ export async function cancelAcceptance(req, res, next) {
     await createNotification({
       recipientId: request.createdBy._id,
       type: "request_canceled",
-      message: `${req.user.displayName || req.user.email} canceled helping with "${request.title}". It's open again.`,
+      message: `${
+        req.user.displayName || req.user.email
+      } canceled helping with "${request.title}". It's open again.`,
     });
 
     // optional email to requester
     await sendEmail({
       to: request.createdBy.email,
       subject: "Helper canceled your request",
-      body: `Your request "${request.title}" is now open again because ${req.user.displayName || req.user.email} canceled.`,
+      body: `Your request "${request.title}" is now open again because ${
+        req.user.displayName || req.user.email
+      } canceled.`,
     });
 
     res.json(request);
@@ -320,23 +398,36 @@ export async function getNearbyRequests(req, res, next) {
     }
 
     const md = Number(maxDistance);
+    const latNum = Number(lat);
+    const lngNum = Number(lng);
+
     const match = {};
     if (status) match.status = status;
     if (tag) match.category = tag;
     if (category) match.category = category;
 
-    const results = await Request.aggregate([
-      {
-        $geoNear: {
-          near: { type: "Point", coordinates: [Number(lng), Number(lat)] },
-          distanceField: "distance",
-          spherical: true,
-          ...(Number.isFinite(md) ? { maxDistance: md } : {}),
-        },
-      },
-      { $match: match },
-      { $limit: 100 },
-    ]);
+    const docs = await Request.find(match).lean();
+
+    const results = docs
+      .map((doc) => {
+        const coords = doc.location?.coordinates;
+        if (
+          !coords ||
+          !Array.isArray(coords) ||
+          coords.length < 2 ||
+          !isFiniteNum(coords[0]) ||
+          !isFiniteNum(coords[1])
+        ) {
+          return null;
+        }
+
+        const [lng2, lat2] = coords;
+        const d = distanceMeters(latNum, lngNum, lat2, lng2);
+        return { ...doc, distance: d };
+      })
+      .filter((doc) => doc && (Number.isFinite(md) ? doc.distance <= md : true))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 100);
 
     res.json({ results });
   } catch (e) {

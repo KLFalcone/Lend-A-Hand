@@ -1,114 +1,133 @@
-import React from "react";
+// frontend/src/pages/Browse.jsx
+import React, { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import RequestDetailsModal from "../components/RequestDetailsModal";
-import './Browse.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import "./Browse.css";
+import "bootstrap/dist/css/bootstrap.min.css";
+
+// helper: miles -> meters (Mongo $near expects meters)
+const milesToMeters = (miles) => miles * 1609.34;
+
+// Distance options for the dropdown
+const DISTANCE_OPTIONS = [
+  { label: "Any Distance", value: "" },
+  { label: "Within 5 mi", value: "5" },
+  { label: "Within 10 mi", value: "10" },
+  { label: "Within 25 mi", value: "25" },
+  { label: "Within 50 mi", value: "50" },
+];
+
+// Bootstrap badge version
+const StatusBadge = ({ status }) => {
+  const s = String(status || "open").toLowerCase();
+  const colorMap = {
+    open: "primary",
+    in_progress: "success",
+    pending_confirmation: "warning",
+    closed: "danger",
+  };
+  return (
+    <span className={`badge bg-${colorMap[s] || "secondary"} text-capitalize`}>
+      {s.replace("_", " ")}
+    </span>
+  );
+};
 
 export default function Browse() {
-  const [items, setItems] = React.useState([]);
-  const [filteredItems, setFilteredItems] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState("");
-  const [selectedId, setSelectedId] = React.useState(null);
-  const [, setCurrentUser] = React.useState(null);
+  const [items, setItems] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const [category, setCategory] = React.useState("");
-  const [urgency, setUrgency] = React.useState("");
-  const [distance, setDistance] = React.useState("");
-  const [status, setStatus] = React.useState("");
+  const [selectedId, setSelectedId] = useState(null);
+  const [, setCurrentUser] = useState(null);
 
-  const [currentPage, setCurrentPage] = React.useState(1);
+  // filters
+  const [category, setCategory] = useState("");
+  const [urgency, setUrgency] = useState("");
+  const [distance, setDistance] = useState("");
+  const [status, setStatus] = useState("");
+
+  // pagination
+  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
-  React.useEffect(() => {
+  // user location for distance filter
+  const [coords, setCoords] = useState(null);
+  const [locationError, setLocationError] = useState("");
+
+  // grab browser location once (best-effort)
+  useEffect(() => {
+    if (!("geolocation" in navigator)) {
+      setLocationError("Location not available in this browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+        setLocationError("");
+      },
+      (err) => {
+        console.warn("Geolocation error:", err?.message);
+        setLocationError(
+          "Allow location in your browser to filter by distance (optional)."
+        );
+      }
+    );
+  }, []);
+
+  // fetch requests whenever filters or coords change
+  useEffect(() => {
     let mounted = true;
-    (async () => {
+
+    const load = async () => {
+      setLoading(true);
+      setError("");
+
       try {
-        setLoading(true);
+        const params = {};
+
+        if (status) params.status = status;
+        if (category) params.category = category;
+        if (urgency) params.urgency = urgency;
+
+        // only attach geo filters if user picked a distance AND we have coords
+        if (distance && coords) {
+          params.lat = coords.lat;
+          params.lng = coords.lng;
+          params.maxDistance = milesToMeters(Number(distance));
+        }
+
         const [reqs, user] = await Promise.all([
-          api.listRequests?.(),
+          api.listRequests ? api.listRequests(params) : [],
           api.getCurrentUser?.().catch(() => null),
         ]);
-        if (mounted) {
-          const valid = Array.isArray(reqs) ? reqs : [];
-          setItems(valid);
-          setFilteredItems(valid);
-          setCurrentUser(user || null);
-        }
+
+        if (!mounted) return;
+
+        const valid = Array.isArray(reqs) ? reqs : [];
+        setItems(valid);
+        setFilteredItems(valid);
+        setCurrentUser(user || null);
+        setCurrentPage(1);
       } catch (e) {
         console.error("Browse fetch failed:", e);
-        if (mounted) setError("Couldn’t load requests.");
+        if (mounted) setError(e.message || "Couldn’t load requests.");
       } finally {
         if (mounted) setLoading(false);
       }
-    })();
-    return () => { mounted = false; };
-  }, []);
-
-  React.useEffect(() => {
-    const applyLocalFilters = (baseList) => {
-      let result = baseList;
-      if (category)
-        result = result.filter((r) => r.category?.toLowerCase() === category.toLowerCase());
-      if (urgency)
-        result = result.filter((r) => r.urgency?.toLowerCase() === urgency.toLowerCase());
-      if (status)
-        result = result.filter((r) => r.status?.toLowerCase() === status.toLowerCase());
-      return result;
     };
 
-    const fetchWithDistance = () => {
-      const miles = Number(distance);
-      if (!miles || Number.isNaN(miles)) {
-        setFilteredItems(applyLocalFilters(items));
-        setCurrentPage(1);
-        return;
-      }
+    load();
 
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          try {
-            const { latitude, longitude } = pos.coords;
-            const maxDistanceMeters = Math.round(miles * 1609.34);
-            let nearby = null;
-            if (typeof api.getNearbyRequests === "function") {
-              nearby = await api.getNearbyRequests(latitude, longitude, maxDistanceMeters);
-            } else if (typeof api.listRequests === "function") {
-              nearby = await api.listRequests({
-                lat: latitude,
-                lng: longitude,
-                maxDistance: maxDistanceMeters,
-                status: "open",
-              });
-            }
-            const list = Array.isArray(nearby?.results)
-              ? nearby.results
-              : Array.isArray(nearby)
-              ? nearby
-              : [];
-            setFilteredItems(applyLocalFilters(list));
-            setCurrentPage(1);
-          } catch (err) {
-            console.error("Nearby search failed:", err);
-            setFilteredItems(applyLocalFilters(items));
-            setCurrentPage(1);
-          }
-        },
-        (err) => {
-          console.warn("Geolocation failed/denied:", err);
-          setFilteredItems(applyLocalFilters(items));
-          setCurrentPage(1);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
+    return () => {
+      mounted = false;
     };
-
-    if (distance) fetchWithDistance();
-    else {
-      setFilteredItems(applyLocalFilters(items));
-      setCurrentPage(1);
-    }
-  }, [category, urgency, status, distance, items]);
+  }, [category, urgency, status, distance, coords]);
 
   const clearFilters = () => {
     setCategory("");
@@ -117,49 +136,64 @@ export default function Browse() {
     setStatus("");
   };
 
-  const StatusBadge = ({ status }) => {
-    const s = String(status || "open").toLowerCase();
-    const colorMap = {
-      open: "primary",
-      in_progress: "success",
-      pending_confirmation: "warning",
-      closed: "danger",
-    };
-    return (
-      <span className={`badge bg-${colorMap[s] || "secondary"} text-capitalize`}>
-        {s.replace("_", " ")}
-      </span>
-    );
+  // distance change handler: if user picks a distance but we have no coords,
+  // show a friendly message and keep distance as "Any"
+  const handleDistanceChange = (e) => {
+    const value = e.target.value;
+
+    if (value && !coords) {
+      alert(
+        "To filter by distance, please allow location access in your browser (look for the location icon near the URL bar) and then try again."
+      );
+      setDistance("");
+      return;
+    }
+
+    setDistance(value);
   };
 
   const updateStatus = (newStatus, requestId) => {
-    setItems(prev =>
-      prev.map(item =>
-        item._id === requestId || item.id === requestId ? { ...item, status: newStatus } : item
+    setItems((prev) =>
+      prev.map((item) =>
+        item._id === requestId || item.id === requestId
+          ? { ...item, status: newStatus }
+          : item
       )
     );
-    setFilteredItems(prev =>
-      prev.map(item =>
-        item._id === requestId || item.id === requestId ? { ...item, status: newStatus } : item
+    setFilteredItems((prev) =>
+      prev.map((item) =>
+        item._id === requestId || item.id === requestId
+          ? { ...item, status: newStatus }
+          : item
       )
     );
   };
 
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentItems = filteredItems.slice(startIndex, startIndex + itemsPerPage);
+  const currentItems = filteredItems.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
-  if (loading) return <main className="browse-container">Loading…</main>;
-  if (error) return <main className="browse-container">{error}</main>;
-  if (!items.length) return <main className="browse-container">No requests yet.</main>;
+  if (loading)
+    return <main className="browse-container">Loading…</main>;
+  if (error)
+    return <main className="browse-container">{error}</main>;
+  if (!items.length)
+    return <main className="browse-container">No requests yet.</main>;
 
   return (
     <main className="browse-container">
       <h2 className="browse-title text-center mb-4">Browse Requests</h2>
 
       {/* Filters */}
-      <div className="filter-bar mb-4 d-flex flex-wrap justify-content-center gap-2">
-        <select value={category} onChange={(e) => setCategory(e.target.value)} className="form-select w-auto">
+      <div className="filter-bar mb-2 d-flex flex-wrap justify-content-center gap-2">
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="form-select w-auto"
+        >
           <option value="">All Categories</option>
           <option value="Errand">Errand</option>
           <option value="Yardwork">Yardwork</option>
@@ -169,32 +203,64 @@ export default function Browse() {
           <option value="Other">Other</option>
         </select>
 
-        <select value={urgency} onChange={(e) => setUrgency(e.target.value)} className="form-select w-auto">
+        <select
+          value={urgency}
+          onChange={(e) => setUrgency(e.target.value)}
+          className="form-select w-auto"
+        >
           <option value="">All Urgencies</option>
           <option value="low">Low</option>
           <option value="medium">Medium</option>
           <option value="high">High</option>
         </select>
 
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className="form-select w-auto">
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="form-select w-auto"
+        >
           <option value="">All Statuses</option>
           <option value="open">Open</option>
           <option value="in_progress">In Progress</option>
-          <option value="pending_confirmation">Pending Confirmation</option>
+          <option value="pending_confirmation">
+            Pending Confirmation
+          </option>
           <option value="closed">Closed</option>
         </select>
 
-        <select value={distance} onChange={(e) => setDistance(e.target.value)} className="form-select w-auto">
-          <option value="">Any Distance</option>
-          <option value="5">Within 5 mi</option>
-          <option value="10">Within 10 mi</option>
-          <option value="25">Within 25 mi</option>
+        <select
+          value={distance}
+          onChange={handleDistanceChange}
+          className="form-select w-auto"
+        >
+          {DISTANCE_OPTIONS.map((opt) => (
+            <option key={opt.label} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
         </select>
 
-        <button className="btn btn-outline-secondary clear-bttn" onClick={clearFilters}>
+        <button
+          className="btn btn-outline-secondary clear-bttn"
+          onClick={clearFilters}
+          type="button"
+        >
           Clear All
         </button>
       </div>
+
+      {locationError && (
+        <p
+          style={{
+            textAlign: "center",
+            fontSize: 12,
+            color: "#6b7280",
+            marginBottom: 8,
+          }}
+        >
+          {locationError}
+        </p>
+      )}
 
       {/* Requests */}
       <div className="row g-3">
@@ -218,7 +284,8 @@ export default function Browse() {
                   tabIndex={0}
                   onClick={() => setSelectedId(id)}
                   onKeyDown={(e) =>
-                    (e.key === "Enter" || e.key === " ") && setSelectedId(id)
+                    (e.key === "Enter" || e.key === " ") &&
+                    setSelectedId(id)
                   }
                 >
                   <div className="card-body">
@@ -267,7 +334,9 @@ export default function Browse() {
         <RequestDetailsModal
           requestId={selectedId}
           onClose={() => setSelectedId(null)}
-          onStatusChange={(newStatus) => updateStatus(newStatus, selectedId)}
+          onStatusChange={(newStatus) =>
+            updateStatus(newStatus, selectedId)
+          }
         />
       )}
     </main>
