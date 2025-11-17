@@ -32,7 +32,7 @@ export default function Footer() {
         <div className="footer-line"></div>
       </div>
       <small className='copyright'>
-        &copy; {new Date().getFullYear()} Neighborhood Help
+        &copy; {new Date().getFullYear()} Lend A Hand
       </small>
     </footer>
   );

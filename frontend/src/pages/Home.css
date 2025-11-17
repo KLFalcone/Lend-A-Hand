@@ -84,35 +84,28 @@
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
-.browse-button {
-  background-color: var(--color-accent);
+.browse-button,
+.login-button {
+  background-color: #d0786a;
   color: #fff;
 }
 
-.browse-button:hover {
-  background-color: var(--color-accent-hover);
+.browse-button:hover,
+.login-button:hover {
+  background-color: #b66659;
   color: #fff;
 }
 
-.post-button {
-  background-color: var(--color-success);
-  color: #fff;
-}
-
-.post-button:hover {
-  background-color: #059669;
-  color: #fff;
-}
-
-.login-button,
+.post-button,
 .register-button {
-  background-color: #e5e7eb;
-  color: #111827;
+  background-color: #ecac9f;
+  color: #fff;
 }
 
-.login-button:hover,
+.post-button:hover,
 .register-button:hover {
-  background-color: #d1d5db;
+  background-color: #d6978b;
+  color: #fff;
 }
 
 @media (max-width: 640px) {

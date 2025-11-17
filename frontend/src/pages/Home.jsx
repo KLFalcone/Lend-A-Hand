@@ -34,7 +34,7 @@ export default function Home() {
       <div className="home-hero">
         <div className="overlay"></div>
         <header className="home-header">
-          <h1 className="home-title">Neighborhood Help</h1>
+          <h1 className="home-title">Lend A Hand</h1>
           <p className="home-slogan">
             Neighbors helping neighbors with everyday tasks.
           </p>

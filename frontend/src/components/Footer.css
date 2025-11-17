@@ -1,10 +1,8 @@
-/* Footer.css */
-
 footer.footer {
   text-align: center;
   padding: 2rem 1rem 1rem 1rem;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #6b7280; /* matches Home page text tone */
+  color: #6b7280;
 }
 
 .footer-wrapper {
@@ -17,7 +15,7 @@ footer.footer {
 }
 
 .footer-line {
-  border-top: 1px solid #d1d5db; /* subtle gray line */
+  border-top: 1px solid #d1d5db;
   flex: 1 1 100px;
   max-width: 200px;
   height: 0;
@@ -42,17 +40,16 @@ footer.footer {
 }
 
 .footer-link a:hover {
-  color: #374151; /* darker gray on hover */
+  color: #374151;
 }
 
 .copyright {
   display: block;
   margin-top: 0.5rem;
   font-size: 0.875rem;
-  color: #9ca3af; /* lighter gray */
+  color: #9ca3af;
 }
 
-/* Responsive adjustments */
 @media (max-width: 640px) {
   .footer-wrapper {
     flex-direction: column;

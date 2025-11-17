@@ -16,7 +16,7 @@ export default function Nav({ links }) {
           <header id="m-header" onClick={hamburgerHandler}>
             <Link to='./' className="m-nav-header">
               <div id="m-nav-name-closed">
-                Neighborhood Help
+                Lend A Hand
               </div>
             </Link>
           </header>
@@ -32,7 +32,7 @@ export default function Nav({ links }) {
         <header id="m-header" onClick={hamburgerHandler}>
           <Link to='./' className="m-nav-header">
             <div id="m-nav-name-open">
-              Neighborhood Help
+              Lend A Hand
             </div>
           </Link>
         </header>

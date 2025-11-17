@@ -1,12 +1,10 @@
-/* Wrapper */
 .nav-wrapper {
   width: 100%;
-  background: #ffffff; /* main page background */
-  border-bottom: 1px solid #e5e7eb; /* subtle light gray border */
+  background: #d0786a;
+  border-bottom: 1px solid #d0786a;
   font-family: 'Inter', sans-serif;
 }
 
-/* Main nav bar: three lanes */
 #nav {
   max-width: 1100px;
   margin: 0 auto;
@@ -16,7 +14,6 @@
   gap: 16px;
 }
 
-/* Lanes */
 #nav-left {
   flex: 0 0 auto;
 }
@@ -35,18 +32,16 @@
   white-space: nowrap;
 }
 
-/* Brand */
 #nav-header {
   text-decoration: none;
-  color: #111827; /* dark neutral for brand name */
 }
 
 #nav-name {
   font-weight: 700;
-  font-size: 22px; /* slightly bigger for modern look */
+  font-size: 22px;
+  color: #fffaf2;
 }
 
-/* Links row (center) */
 #nav-pages {
   display: flex;
   align-items: center;
@@ -55,23 +50,22 @@
 
 #nav-pages a {
   text-decoration: none;
-  color: #374151; /* medium dark gray for links */
+  color: #fffaf2;
   font-weight: 500;
   font-size: 15px;
   transition: color 0.2s ease;
 }
 
 #nav-pages a:hover {
-  color: #3b82f6; /* blue hover to match theme buttons */
+  color: #ecac9f;
   text-decoration: underline;
 }
 
 .selected-nav {
-  color: #3b82f6; /* highlight selected page */
+  color: #ecac9f;
   text-decoration: underline;
 }
 
-/* Right side: user + logout */
 .nav-user .welcome-text {
   font-size: 14px;
   color: #374151;
@@ -92,11 +86,14 @@
   background: #e5e7eb;
 }
 
-/* Optional: NotificationBell button reset so it aligns nicely */
 button[aria-label="Notifications"] {
   border: none;
   background: transparent;
   cursor: pointer;
   line-height: 0;
   color: #374151;
+}
+
+.welcome-text {
+  color: #fffaf2;
 }

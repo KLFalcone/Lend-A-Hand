@@ -7,7 +7,7 @@ export default function Navbar({ links = [], right = null }) {
       <nav id="nav">
         <div id="nav-left">
           <Link to="/" id="nav-header" aria-label="Neighborhood Help home">
-            <div id="nav-name">Neighborhood Help</div>
+            <div id="nav-name">Lend A Hand</div>
           </Link>
         </div>
 
