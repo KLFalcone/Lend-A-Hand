@@ -65,7 +65,7 @@ export default function AdminDashboard() {
   // default tab -> Requests (instead of Users)
   const [activeTab, setActiveTab] = useState("requests");
 
-  // NEW: which request is open in the details modal
+  // which request is open in the details modal
   const [selectedRequestId, setSelectedRequestId] = useState(null);
 
   // ✅ Check auth / role and only allow admins in
@@ -209,12 +209,12 @@ export default function AdminDashboard() {
     });
   };
 
-  // NEW: open details modal when admin clicks a title
+  // open details modal when admin clicks a title
   const handleOpenRequestDetails = (id) => {
     setSelectedRequestId(id);
   };
 
-  // NEW: keep admin data in sync with actions taken in the modal
+  // keep admin data in sync with actions taken in the modal
   const handleRequestStatusChange = (status) => {
     if (!selectedRequestId) return;
 
@@ -280,6 +280,7 @@ export default function AdminDashboard() {
     <main style={{ padding: 16, maxWidth: 1200, margin: "0 auto" }}>
       <h1 style={{ marginBottom: 24 }}>Admin Dashboard</h1>
 
+      {/* Tabs */}
       <div
         style={{
           display: "flex",
@@ -320,6 +321,7 @@ export default function AdminDashboard() {
         </button>
       </div>
 
+      {/* Users tab */}
       {activeTab === "users" && (
         <div>
           <div
@@ -384,6 +386,7 @@ export default function AdminDashboard() {
                           fontSize: 14,
                           padding: "4px 12px",
                           background: "#dc2626",
+                          color: "#fff",
                         }}
                       >
                         Delete
@@ -397,58 +400,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-                    <table style={tableStyle}>
-                        <thead>
-                        <tr>
-                            <th style={thStyle}>Title</th>
-                            <th style={thStyle}>Status</th>
-                            <th style={thStyle}>Created By</th>
-                            <th style={thStyle}>Date</th>
-                            <th style={thStyle}>Flagged</th>
-                            <th style={thStyle}>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {filteredRequests.map((req) => (
-                            <tr key={req._id}>
-                                <td style={tdStyle}>{req.title}</td>
-                                <td style={tdStyle}>{badge(req.status.replace("_", " "), "#3b82f6")}</td>
-                                <td style={tdStyle}>{req.createdBy?.displayName || req.createdBy?.email || "Unknown"}</td>
-                                <td style={tdStyle}>{new Date(req.createdAt).toLocaleDateString()}</td>
-                                <td style={tdStyle}>{req.flagged ? badge("⚠️ Flagged", "#f59e0b") : "—"}</td>
-                                <td style={tdStyle}>
-                                    <div style={{ display: "flex", gap: 8 }}>
-                                        <button
-                                            onClick={() => handleToggleFlag(req._id, req.flagged)}
-                                            style={{ fontSize: 14, padding: "4px 12px", background: req.flagged ? "#4caf50" : "#f59e0b" }}
-                                        >
-                                            {req.flagged ? "Unflag" : "Flag"}
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteRequest(req._id, req.title)}
-                                            style={{ fontSize: 14, padding: "4px 12px", background: "#dc2626" }}
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
-            <ConfirmModal
-                show={confirmModal.show}
-                title={confirmModal.title}
-                message={confirmModal.message}
-                onConfirm={confirmModal.onConfirm}
-                onCancel={() => setConfirmModal({ show: false })}
-            />
-        </main>
-    );
-}
+      {/* Requests tab */}
       {activeTab === "requests" && (
         <div>
           <div
@@ -550,6 +502,7 @@ export default function AdminDashboard() {
                           background: req.flagged
                             ? "#4caf50"
                             : "#f59e0b",
+                          color: "#fff",
                         }}
                       >
                         {req.flagged ? "Unflag" : "Flag"}
@@ -562,6 +515,7 @@ export default function AdminDashboard() {
                           fontSize: 14,
                           padding: "4px 12px",
                           background: "#dc2626",
+                          color: "#fff",
                         }}
                       >
                         Delete
