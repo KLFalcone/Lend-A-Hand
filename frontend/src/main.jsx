@@ -12,6 +12,7 @@ import Profile from './pages/Profile.jsx'
 import Privacy from './pages/Privacy.jsx'
 import Terms from './pages/Terms.jsx'
 import Support from './pages/Support.jsx'
+import AdminDashboard from './pages/AdminDashboard.jsx'
 import SpecificPost from "./pages/SpecificPost.jsx";
 
 const router = createBrowserRouter([
@@ -38,6 +39,10 @@ const router = createBrowserRouter([
         path: "/register",
         element: <Register />
       },
+        {
+            path: "/admin",
+            element: <AdminDashboard />
+        },
       {
         path: "/login",
         element: <Login />

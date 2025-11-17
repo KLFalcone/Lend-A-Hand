@@ -6,6 +6,7 @@ const DEFAULT_FETCH_OPTS = {
 };
 
 function authHeaders() {
+  // Optional: if you also store a token in localStorage, we attach it.
   const token = localStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -31,6 +32,7 @@ export async function apiFetch(path, options = {}) {
 
     const res = await fetch(`${BASE}${path}`, init);
 
+    // Parse response safely (handles 204 and non-JSON)
     const ct = res.headers.get("content-type") || "";
     let data = null;
 
@@ -53,7 +55,7 @@ export async function apiFetch(path, options = {}) {
   }
 }
 
-// raw helper for special cases (file uploads, etc.)
+// Optional raw helper for special cases (file uploads, etc.)
 export const apiRaw = (path, init = {}) =>
   fetch(`${BASE}${path}`, { ...DEFAULT_FETCH_OPTS, ...init });
 
@@ -79,7 +81,6 @@ export const api = {
 
   // users / profile
   getProfile: () => apiFetch("/api/v1/users/me"),
-
   updateMe: (payload) =>
     apiFetch("/api/v1/users/me", {
       method: "PATCH",
@@ -130,7 +131,7 @@ export const api = {
   confirmCompletion: (id) =>
     apiFetch(`/api/v1/requests/${id}/confirm`, { method: "PATCH" }),
 
-  // nearby search
+  // new helper for nearby search
   getNearbyRequests: (lat, lng, miles) =>
     apiFetch(`/api/v1/requests/near?lat=${lat}&lng=${lng}&maxDistance=${miles}`),
 
@@ -141,5 +142,32 @@ export const api = {
     apiFetch(`/api/v1/notifications/${id}/read`, { method: "PATCH" }),
 
   markAllNotificationsRead: () =>
+    apiFetch('/api/v1/notifications/read-all', { method: 'PATCH' }),
+
+// --- admin ---
+    admin: {
+        // User management
+        getAllUsers: () => apiFetch('/api/v1/admin/users'),
+        updateUser: (id, updates) =>
+            apiFetch(`/api/v1/admin/users/${id}`, {
+                method: 'PATCH',
+                body: JSON.stringify(updates),
+            }),
+        deleteUser: (id) =>
+            apiFetch(`/api/v1/admin/users/${id}`, { method: 'DELETE' }),
+
+        // Request management
+        getAllRequests: (params = {}) => {
+            const qs = new URLSearchParams(params).toString();
+            return apiFetch(`/api/v1/admin/requests${qs ? `?${qs}` : ''}`);
+        },
+        updateRequest: (id, updates) =>
+            apiFetch(`/api/v1/admin/requests/${id}`, {
+                method: 'PATCH',
+                body: JSON.stringify(updates),
+            }),
+        deleteRequest: (id) =>
+            apiFetch(`/api/v1/admin/requests/${id}`, { method: 'DELETE' }),
+    },
     apiFetch("/api/v1/notifications/read-all", { method: "PATCH" }),
 };
