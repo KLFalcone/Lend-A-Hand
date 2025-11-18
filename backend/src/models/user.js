@@ -16,7 +16,6 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    // shown in UI as the user's name
     displayName: {
       type: String,
       default: "",
@@ -44,7 +43,7 @@ const userSchema = new mongoose.Schema(
     availability: { type: String, default: "", trim: true, maxlength: 200 },
     profilePic: { type: String, default: "", trim: true, maxlength: 500 },
 
-    // --- feedback received as a helper ---
+    // --- feedback received as a helper (star rating 1–5) ---
     feedbackReceived: [
       {
         request: {
@@ -56,8 +55,9 @@ const userSchema = new mongoose.Schema(
           ref: "User",
         },
         rating: {
-          type: String,
-          enum: ["helpful", "not_helpful"],
+          type: Number,
+          min: 1,
+          max: 5,
         },
         comment: {
           type: String,
@@ -76,13 +76,24 @@ const userSchema = new mongoose.Schema(
     toJSON: {
       virtuals: true,
       transform(_doc, ret) {
-        delete ret.password; // never send hashed password
+        delete ret.password;
         return ret;
       },
     },
     toObject: { virtuals: true },
   }
 );
+
+// derived average rating for convenience
+userSchema.virtual("averageRating").get(function () {
+  if (!this.feedbackReceived || this.feedbackReceived.length === 0) return null;
+  const sum = this.feedbackReceived.reduce(
+    (acc, f) => acc + (f.rating || 0),
+    0
+  );
+  const count = this.feedbackReceived.filter((f) => f.rating != null).length;
+  return count ? sum / count : null;
+});
 
 // hash password on create/update if modified
 userSchema.pre("save", async function (next) {
@@ -92,7 +103,6 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// compare plaintext against hashed password
 userSchema.methods.comparePassword = function (plain) {
   return bcrypt.compare(plain, this.password);
 };

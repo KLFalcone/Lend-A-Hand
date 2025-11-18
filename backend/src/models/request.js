@@ -1,8 +1,36 @@
 import mongoose from "mongoose";
 
+// Individual feedback entries stored on each Request
+const FeedbackSchema = new mongoose.Schema(
+  {
+    from: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    // 1–5 star rating instead of thumbs up / down
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      required: true,
+    },
+    comment: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false }
+);
+
 const RequestSchema = new mongoose.Schema(
   {
-    title:       { type: String, required: true, trim: true },
+    title: { type: String, required: true, trim: true },
     description: { type: String, required: true, trim: true },
 
     category: {
@@ -14,22 +42,21 @@ const RequestSchema = new mongoose.Schema(
     urgency: { type: String, required: true, enum: ["low", "medium", "high"] },
 
     // GeoJSON location: used for geospatial queries ($near)
-location: {
-  type: {
-    type: String,
-    enum: ["Point"],
-    required: true
-  },
-  coordinates: {
-    type: [Number],
-    required: false
-  },
-  address: {
-    type: String,
-    trim: true
-  }
-},
-
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        required: true,
+      },
+      coordinates: {
+        type: [Number],
+        required: false,
+      },
+      address: {
+        type: String,
+        trim: true,
+      },
+    },
 
     status: {
       type: String,
@@ -38,7 +65,11 @@ location: {
     },
 
     // Who created the request
-    createdBy:  { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
 
     // Who accepted (any user can be helper)
     acceptedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
@@ -49,10 +80,16 @@ location: {
 
     tags: { type: [String], default: [] },
 
-      flagged: {
-          type: Boolean,
-          default: false
-      },
+    // Feedback entries left by requesters about the helper
+    feedback: {
+      type: [FeedbackSchema],
+      default: [],
+    },
+
+    flagged: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

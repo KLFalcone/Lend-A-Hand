@@ -17,6 +17,8 @@ import Terms from "./pages/Terms.jsx";
 import Support from "./pages/Support.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import SpecificPost from "./pages/SpecificPost.jsx";
+import FeedbackPage from "./pages/FeedbackPage.jsx";
+import FeedbackCenter from "./pages/FeedbackCenter.jsx";
 
 const router = createBrowserRouter([
   {
@@ -34,6 +36,10 @@ const router = createBrowserRouter([
       { path: "login", element: <Login /> },
 
       { path: "profile", element: <Profile /> },
+
+      // NEW: public-ish feedback page
+      { path: "feedback/:userId", element: <FeedbackPage /> },
+      { path: "feedback", element: <FeedbackCenter /> },
       { path: "privacy", element: <Privacy /> },
       { path: "terms", element: <Terms /> },
       { path: "support", element: <Support /> },

@@ -35,8 +35,9 @@ export default function Profile() {
   const [selectedId, setSelectedId] = useState(null);
   const [showRequestModal, setShowRequestModal] = useState(false);
 
-  // ref so we can force focus on the address field
+  // refs
   const addressInputRef = useRef(null);
+  const displayNameInputRef = useRef(null);
 
   // load profile
   useEffect(() => {
@@ -114,6 +115,10 @@ export default function Profile() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // displayName is unmanaged (uncontrolled), handled via ref
+    if (name === "displayName") return;
+
     setProfile((p) => ({ ...p, [name]: value }));
   };
 
@@ -122,6 +127,9 @@ export default function Profile() {
     setMessage("");
 
     const addr = profile.address.trim();
+    const displayName = (
+      displayNameInputRef.current?.value || profile.displayName || ""
+    ).trim();
 
     if (!addr) {
       setMessage(
@@ -133,17 +141,20 @@ export default function Profile() {
     setSaving(true);
     try {
       const payload = {
-        displayName: profile.displayName.trim(),
+        displayName,
         address: addr,
         profilePic: profile.profilePic,
       };
 
       const { user } = await api.updateMe(payload);
 
+      const updatedDisplayName =
+        user.displayName || displayName || profile.displayName;
+
       setProfile((p) => ({
         ...p,
         email: user.email || p.email,
-        displayName: user.displayName || p.displayName,
+        displayName: updatedDisplayName,
         address: user.address || p.address,
         profilePic: user.profilePic || p.profilePic,
       }));
@@ -155,7 +166,7 @@ export default function Profile() {
 
       setMessage("Profile updated successfully!");
       setEditing(false);
-      localStorage.setItem("displayName", user.displayName || "");
+      localStorage.setItem("displayName", updatedDisplayName || "");
     } catch (err) {
       console.error("Profile update error:", err);
       setMessage(`${err.message || "Update failed."}`);
@@ -233,10 +244,18 @@ export default function Profile() {
     await fetchOverview();
   };
 
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   if (loading) return <p style={{ padding: 16 }}>Loading profile...</p>;
 
-  const Card = ({ children }) => (
-    <div
+  const Card = ({ children, id }) => (
+    <section
+      id={id}
       style={{
         border: "1px solid #e5e7eb",
         borderRadius: 12,
@@ -245,14 +264,21 @@ export default function Profile() {
       }}
     >
       {children}
-    </div>
+    </section>
   );
 
   const Stat = ({ num, label }) => (
-    <Card>
+    <div
+      style={{
+        border: "1px solid #e5e7eb",
+        borderRadius: 12,
+        background: "#fff",
+        padding: 16,
+      }}
+    >
       <div style={{ fontSize: 20, fontWeight: 700 }}>{num}</div>
       <div style={{ color: "#667085", fontSize: 14 }}>{label}</div>
-    </Card>
+    </div>
   );
 
   const Badge = ({ status }) => {
@@ -366,9 +392,72 @@ export default function Profile() {
           profile.displayName || profile.email || "User"
         )}`;
 
+  // --- derived lists for activity ---
+  const createdRequests = overview?.created || [];
+  const acceptedRequests = overview?.accepted || [];
+
+  const createdOpen = createdRequests.filter(
+    (r) => r && r.status && String(r.status).toLowerCase() !== "closed"
+  );
+  const createdClosed = createdRequests.filter(
+    (r) => r && String(r.status).toLowerCase() === "closed"
+  );
+
+  const helpingActive = acceptedRequests.filter(
+    (r) =>
+      r &&
+      r.status &&
+      !["closed", "completed"].includes(String(r.status).toLowerCase())
+  );
+
+  const helpingCompleted = acceptedRequests.filter(
+    (r) =>
+      r &&
+      r.status &&
+      ["closed", "completed"].includes(String(r.status).toLowerCase())
+  );
+
+  // reputation summary
+  const feedbackSummary = overview?.feedbackSummary || null;
+  const avgRating = feedbackSummary?.avgRating ?? null;
+  const reviewCount = feedbackSummary?.reviewCount ?? 0;
+
   return (
     <main style={{ padding: 16, maxWidth: 960, margin: "0 auto" }}>
-      <h2 style={{ margin: "6px 0 12px" }}>My Profile</h2>
+      <h2 style={{ margin: "6px 0 8px" }}>My Profile</h2>
+
+      {/* small in-page nav for sections */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 16,
+          fontSize: 13,
+        }}
+      >
+        <button type="button" onClick={() => scrollToSection("section-profile")}>
+          Profile
+        </button>
+        <button
+          type="button"
+          onClick={() => scrollToSection("section-my-requests")}
+        >
+          My requests
+        </button>
+        <button
+          type="button"
+          onClick={() => scrollToSection("section-helping")}
+        >
+          Requests I&apos;m helping with
+        </button>
+        <button
+          type="button"
+          onClick={() => scrollToSection("section-feedback")}
+        >
+          Reputation &amp; feedback
+        </button>
+      </div>
 
       <div
         style={{
@@ -377,132 +466,185 @@ export default function Profile() {
           gap: 16,
         }}
       >
-        {/* left: profile editor */}
-        <Card>
-          {!editing ? (
-            <div style={{ maxWidth: 520 }}>
-              <p>
-                <strong>Name:</strong> {profile.displayName || profile.email}
-              </p>
-              <p>
-                <strong>Email:</strong> {profile.email}
-              </p>
-              <p>
-                <strong>Address:</strong> {profile.address || "—"}
-              </p>
-
-              <p>
-                <img src={avatarUrl} alt="Profile avatar" />
-              </p>
-
-              <button onClick={() => setEditing(true)}>Edit Profile</button>
-
-              <div
-                style={{
-                  marginTop: 24,
-                  paddingTop: 24,
-                  borderTop: "1px solid #e5e7eb",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: 14,
-                    color: "#667085",
-                    marginBottom: 8,
-                  }}
-                >
-                  Danger Zone
+        {/* left column: profile + reputation */}
+        <div style={{ display: "grid", gap: 16 }}>
+          {/* profile editor */}
+          <Card id="section-profile">
+            {!editing ? (
+              <div style={{ maxWidth: 520 }}>
+                <p>
+                  <strong>Name:</strong> {profile.displayName || profile.email}
                 </p>
-                <button
-                  onClick={() => setShowDeleteModal(true)}
-                  style={{
-                    background: "#fff",
-                    color: "#dc2626",
-                    border: "1px solid #dc2626",
-                  }}
-                >
-                  Delete Account
-                </button>
-              </div>
-
-              {message && <p style={{ marginTop: 8 }}>{message}</p>}
-            </div>
-          ) : (
-            <form
-              onSubmit={handleSubmit}
-              style={{ maxWidth: 520, display: "grid", gap: 10 }}
-            >
-              {addressPromptActive && (
-                <p style={{ color: "#b45309", fontSize: 14 }}>
-                  To use distance-based filters and nearby matching, please add
-                  your home area address. Include street, city, state, and ZIP.
-                  It is only used to find neighbors close to you.
+                <p>
+                  <strong>Email:</strong> {profile.email}
                 </p>
-              )}
+                <p>
+                  <strong>Address:</strong> {profile.address || "—"}
+                </p>
 
-              <div>
-                <label>Name (display name):</label>
-                <input
-                  name="displayName"
-                  value={profile.displayName}
-                  onChange={handleChange}
-                  placeholder="Your name as shown to others"
-                  autoComplete="name"
-                />
-              </div>
+                <p>
+                  <img src={avatarUrl} alt="Profile avatar" />
+                </p>
 
-              <div>
-                <label>Address:</label>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <input
-                    ref={addressInputRef}
-                    name="address"
-                    value={profile.address}
-                    onChange={handleChange}
-                    autoComplete="street-address"
-                    placeholder="123 Main St, City, ST 12345"
-                    style={{ flex: 1 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleUseCurrentLocation}
-                    disabled={locating}
-                  >
-                    {locating ? "Locating…" : "Use my location"}
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: 16 }}>
-                <label>Profile Picture / Avatar:</label>
-                <AvatarPicker
-                  user={{ name: profile.displayName || profile.email, avatarUrl }}
-                  onUpdate={(url) =>
-                    setProfile((p) => ({ ...p, profilePic: url }))
-                  }
-                />
-              </div>
-
-              <div style={{ display: "flex", gap: 8 }}>
-                <button type="submit" disabled={saving}>
-                  {saving ? "Saving…" : "Save Changes"}
-                </button>
                 <button
-                  type="button"
                   onClick={() => {
-                    setEditing(false);
-                    setAddressPromptActive(false);
+                    setEditing(true);
                     setMessage("");
                   }}
                 >
-                  Cancel
+                  Edit Profile
+                </button>
+
+                <div
+                  style={{
+                    marginTop: 24,
+                    paddingTop: 24,
+                    borderTop: "1px solid #e5e7eb",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 14,
+                      color: "#667085",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Danger Zone
+                  </p>
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    style={{
+                      background: "#fff",
+                      color: "#dc2626",
+                      border: "1px solid #dc2626",
+                    }}
+                  >
+                    Delete Account
+                  </button>
+                </div>
+
+                {message && <p style={{ marginTop: 8 }}>{message}</p>}
+              </div>
+            ) : (
+              <form
+                onSubmit={handleSubmit}
+                style={{ maxWidth: 520, display: "grid", gap: 10 }}
+              >
+                {addressPromptActive && (
+                  <p style={{ color: "#b45309", fontSize: 14 }}>
+                    To use distance-based filters and nearby matching, please
+                    add your home area address. Include street, city, state, and
+                    ZIP. It is only used to find neighbors close to you.
+                  </p>
+                )}
+
+                <div>
+                  <label>Name (display name):</label>
+                  <input
+                    name="displayName"
+                    ref={displayNameInputRef}
+                    defaultValue={profile.displayName}
+                    onChange={handleChange}
+                    placeholder="Your name as shown to others"
+                    autoComplete="name"
+                  />
+                </div>
+
+                <div>
+                  <label>Address:</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      ref={addressInputRef}
+                      name="address"
+                      value={profile.address}
+                      onChange={handleChange}
+                      autoComplete="street-address"
+                      placeholder="123 Main St, City, ST 12345"
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleUseCurrentLocation}
+                      disabled={locating}
+                    >
+                      {locating ? "Locating…" : "Use my location"}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label>Profile Picture / Avatar:</label>
+                  <AvatarPicker
+                    user={{
+                      name: profile.displayName || profile.email,
+                      avatarUrl,
+                    }}
+                    onUpdate={(url) =>
+                      setProfile((p) => ({ ...p, profilePic: url }))
+                    }
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button type="submit" disabled={saving}>
+                    {saving ? "Saving…" : "Save Changes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditing(false);
+                      setAddressPromptActive(false);
+                      setMessage("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                {message && <p style={{ marginTop: 8 }}>{message}</p>}
+              </form>
+            )}
+          </Card>
+
+          {/* reputation / feedback summary */}
+          <Card id="section-feedback">
+            <h3 style={{ margin: "0 0 10px" }}>Reputation &amp; Feedback</h3>
+            {!overview ? (
+              <p>Loading…</p>
+            ) : reviewCount === 0 || !avgRating ? (
+              <p style={{ color: "#667085", fontSize: 14 }}>
+                You don&apos;t have any feedback yet. Complete a few requests to
+                start building your reputation.
+              </p>
+            ) : (
+              <div style={{ display: "grid", gap: 8 }}>
+                <p style={{ margin: 0 }}>
+                  <strong>Average rating:</strong>{" "}
+                  <span style={{ fontSize: 18 }}>
+                    {avgRating.toFixed(1)} / 5{" "}
+                    <span aria-hidden="true">★</span>
+                  </span>
+                </p>
+                <p style={{ margin: 0, color: "#667085", fontSize: 14 }}>
+                  Based on {reviewCount} review
+                  {reviewCount === 1 ? "" : "s"} from neighbors you&apos;ve
+                  helped.
+                </p>
+                <button
+                  type="button"
+                  style={{
+                    marginTop: 8,
+                    fontSize: 13,
+                    padding: "6px 10px",
+                  }}
+                  onClick={() => navigate("/feedback")}
+                >
+                  View detailed feedback
                 </button>
               </div>
-
-              {message && <p style={{ marginTop: 8 }}>{message}</p>}
-            </form>
-          )}
-        </Card>
+            )}
+          </Card>
+        </div>
 
         {/* right: activity */}
         <div style={{ display: "grid", gap: 16 }}>
@@ -513,30 +655,24 @@ export default function Profile() {
               gap: 12,
             }}
           >
-            <Stat
-              num={overview?.created?.length ?? 0}
-              label="Requests I created"
-            />
+            <Stat num={createdRequests.length} label="Requests I created" />
             <Stat
               num={overview?.counts?.createdOpen ?? 0}
               label="Open / active"
             />
-            <Stat
-              num={overview?.accepted?.length ?? 0}
-              label="I'm helping with"
-            />
+            <Stat num={acceptedRequests.length} label="I'm helping with" />
           </div>
 
-          <Card>
+          <Card id="section-my-requests">
             <h3 style={{ margin: "0 0 10px" }}>My requests</h3>
             {overviewErr && (
               <p style={{ color: "#b42318" }}>{overviewErr}</p>
             )}
             {!overview ? (
               <p>Loading…</p>
-            ) : overview.created?.length === 0 ? (
+            ) : createdOpen.length === 0 ? (
               <p style={{ color: "#667085" }}>
-                You haven't posted anything yet.
+                You haven&apos;t posted any open requests yet.
               </p>
             ) : (
               <ul
@@ -546,7 +682,7 @@ export default function Profile() {
                   paddingLeft: 16,
                 }}
               >
-                {overview.created.map((r) => (
+                {createdOpen.map((r) => (
                   <li key={r._id} style={{ display: "grid", gap: 4 }}>
                     <div
                       style={{
@@ -583,9 +719,9 @@ export default function Profile() {
             <h3 style={{ margin: "0 0 10px" }}>Requests I'm helping with</h3>
             {!overview ? (
               <p>Loading…</p>
-            ) : overview.accepted?.length === 0 ? (
+            ) : helpingActive.length === 0 ? (
               <p style={{ color: "#667085" }}>
-                You haven't accepted any requests yet.
+                You haven&apos;t accepted any active requests yet.
               </p>
             ) : (
               <ul
@@ -595,7 +731,7 @@ export default function Profile() {
                   paddingLeft: 16,
                 }}
               >
-                {overview.accepted.map((r) => (
+                {helpingActive.map((r) => (
                   <li key={r._id} style={{ display: "grid", gap: 4 }}>
                     <div
                       style={{
@@ -621,6 +757,112 @@ export default function Profile() {
                     >
                       Joined{" "}
                       {new Date(r.createdAt).toLocaleDateString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card>
+            <h3 style={{ margin: "0 0 10px" }}>
+              Completed requests I helped with
+            </h3>
+            {!overview ? (
+              <p>Loading…</p>
+            ) : helpingCompleted.length === 0 ? (
+              <p style={{ color: "#667085" }}>
+                You don&apos;t have any completed helper requests yet.
+              </p>
+            ) : (
+              <ul
+                style={{
+                  display: "grid",
+                  gap: 8,
+                  paddingLeft: 16,
+                }}
+              >
+                {helpingCompleted.map((r) => (
+                  <li key={r._id} style={{ display: "grid", gap: 4 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <a
+                        href="#"
+                        onClick={(e) => handleRequestClick(e, r._id)}
+                        style={{ fontWeight: 600 }}
+                      >
+                        {r.title || "Untitled Request"}
+                      </a>
+                      <Badge status={r.status} />
+                    </div>
+                    <span
+                      style={{
+                        color: "#667085",
+                        fontSize: 12,
+                      }}
+                    >
+                      Completed{" "}
+                      {new Date(
+                        r.completedAt || r.createdAt
+                      ).toLocaleDateString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card>
+            <h3 style={{ margin: "0 0 10px" }}>
+              Completed requests I created
+            </h3>
+            {!overview ? (
+              <p>Loading…</p>
+            ) : createdClosed.length === 0 ? (
+              <p style={{ color: "#667085" }}>
+                You don&apos;t have any completed requests yet.
+              </p>
+            ) : (
+              <ul
+                style={{
+                  display: "grid",
+                  gap: 8,
+                  paddingLeft: 16,
+                }}
+              >
+                {createdClosed.map((r) => (
+                  <li key={r._id} style={{ display: "grid", gap: 4 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <a
+                        href="#"
+                        onClick={(e) => handleRequestClick(e, r._id)}
+                        style={{ fontWeight: 600 }}
+                      >
+                        {r.title || "Untitled Request"}
+                      </a>
+                      <Badge status={r.status} />
+                    </div>
+                    <span
+                      style={{
+                        color: "#667085",
+                        fontSize: 12,
+                      }}
+                    >
+                      Completed{" "}
+                      {new Date(
+                        r.completedAt || r.createdAt
+                      ).toLocaleDateString()}
                     </span>
                   </li>
                 ))}

@@ -1,3 +1,4 @@
+// frontend/src/components/NotificationBell.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { api } from "../lib/api";
 
@@ -5,6 +6,7 @@ import { api } from "../lib/api";
 export default function NotificationBell({ showWhenEmpty = false }) {
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
+  const [actionBusyId, setActionBusyId] = useState(null); // for confirm actions
   const ref = useRef(null);
 
   const unreadCount = items.filter((n) => !n.isRead).length;
@@ -35,6 +37,33 @@ export default function NotificationBell({ showWhenEmpty = false }) {
       setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
     } catch (e) {
       console.error("Mark all read failed:", e);
+    }
+  }
+
+  // Confirm completion directly from the notification dropdown
+  async function handleConfirmFromNotification(n) {
+    const requestId = n?.meta?.requestId;
+    if (!requestId) {
+      alert("We couldn’t find that request to confirm anymore.");
+      return;
+    }
+
+    const ok = window.confirm(
+      'Confirm this request as completed? This will close it.'
+    );
+    if (!ok) return;
+
+    try {
+      setActionBusyId(n._id);
+      const updated = await api.confirmCompletion(requestId);
+      console.log("Request confirmed from notification:", updated);
+      await markOne(n._id);
+      alert("Request confirmed and closed!");
+    } catch (e) {
+      console.error("Failed to confirm completion from notification:", e);
+      alert("Sorry, we couldn’t confirm that request.");
+    } finally {
+      setActionBusyId(null);
     }
   }
 
@@ -98,10 +127,11 @@ export default function NotificationBell({ showWhenEmpty = false }) {
             position: "absolute",
             right: 0,
             top: "120%",
-            width: 320,
+            width: 380, // a bit wider
             maxHeight: 360,
-            overflow: "auto",
-            background: "#ffffff",          // light background
+            overflowY: "auto", // only vertical scroll
+            overflowX: "hidden", // no horizontal scroll bar
+            background: "#ffffff",
             color: "#111111",
             border: "1px solid #dddddd",
             borderRadius: 8,
@@ -133,37 +163,89 @@ export default function NotificationBell({ showWhenEmpty = false }) {
               You’re all caught up.
             </div>
           ) : (
-            <ul style={{ margin: 0, padding: 0 }}>
-              {items.map((n) => (
-                <li
-                  key={n._id}
-                  style={{
-                    listStyle: "none",
-                    padding: "8px 8px",
-                    borderRadius: 6,
-                    background: n.isRead ? "#fafafa" : "#f1f7ff",
-                    border: "1px solid #e2e6f0",
-                    marginBottom: 6,
-                    display: "grid",
-                    gap: 4,
-                  }}
-                >
-                  <div style={{ fontSize: 14 }}>{n.message}</div>
-                  <div style={{ fontSize: 11, opacity: 0.7 }}>
-                    {new Date(n.createdAt).toLocaleString()}
-                  </div>
-                  {!n.isRead && (
-                    <div>
-                      <button
-                        onClick={() => markOne(n._id)}
-                        style={{ fontSize: 12 }}
-                      >
-                        Mark read
-                      </button>
+            <ul
+              style={{
+                margin: 0,
+                padding: 0,
+              }}
+            >
+              {items.map((n) => {
+                const canConfirm =
+                  n.type === "request_pending_confirmation" &&
+                  n.meta &&
+                  n.meta.requestId;
+
+                return (
+                  <li
+                    key={n._id}
+                    style={{
+                      listStyle: "none",
+                      padding: "8px 8px",
+                      borderRadius: 6,
+                      background: n.isRead ? "#fafafa" : "#f1f7ff",
+                      border: "1px solid #e2e6f0",
+                      marginBottom: 6,
+                      display: "grid",
+                      gap: 4,
+                      wordBreak: "break-word", // wrap long messages
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 14,
+                        whiteSpace: "normal",
+                      }}
+                    >
+                      {n.message}
                     </div>
-                  )}
-                </li>
-              ))}
+                    <div style={{ fontSize: 11, opacity: 0.7 }}>
+                      {new Date(n.createdAt).toLocaleString()}
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 6,
+                        marginTop: 4,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      {!n.isRead && (
+                        <button
+                          onClick={() => markOne(n._id)}
+                          style={{ fontSize: 12 }}
+                          disabled={actionBusyId === n._id}
+                        >
+                          Mark read
+                        </button>
+                      )}
+
+                      {canConfirm && (
+                        <button
+                          onClick={() => handleConfirmFromNotification(n)}
+                          style={{
+                            fontSize: 12,
+                            background: "#17a2b8",
+                            color: "#fff",
+                            border: "none",
+                            padding: "4px 10px",
+                            borderRadius: 4,
+                            cursor:
+                              actionBusyId === n._id
+                                ? "not-allowed"
+                                : "pointer",
+                          }}
+                          disabled={actionBusyId === n._id}
+                        >
+                          {actionBusyId === n._id
+                            ? "Confirming..."
+                            : "Confirm"}
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

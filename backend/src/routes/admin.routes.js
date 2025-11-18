@@ -18,4 +18,7 @@ r.get("/requests", ctrl.getAllRequests);
 r.patch("/requests/:id", ctrl.updateRequest);
 r.delete("/requests/:id", ctrl.deleteRequest);
 
+// Feedback management
+r.get("/feedback", ctrl.getAllFeedback);
+
 export default r;

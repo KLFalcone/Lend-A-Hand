@@ -1,3 +1,4 @@
+// backend/src/controllers/requests.controller.js
 import Request from "../models/request.js";
 import User from "../models/user.js";
 import { createNotification } from "./notifications.controller.js";
@@ -147,17 +148,25 @@ export async function update(req, res, next) {
         const isSelf = req.user?._id?.toString() === recipientId.toString();
         if (!isSelf) {
           const actor = req.user?.displayName || req.user?.email || "Someone";
+          const meta = {
+            requestId: doc._id,
+            partnerEmail: req.user.email,
+            partnerName: actor,
+          };
+
           if (newStatus === "in_progress") {
             await createNotification({
               recipientId,
               type: "request_accepted",
               message: `${actor} accepted your request "${before.title}".`,
+              meta,
             });
           } else if (newStatus === "closed") {
             await createNotification({
               recipientId,
               type: "request_completed",
               message: `${actor} marked your request "${before.title}" as completed.`,
+              meta,
             });
           }
         }
@@ -207,7 +216,10 @@ export async function acceptRequest(req, res, next) {
     const { id } = req.params;
     const userId = req.user._id;
 
-    const request = await Request.findById(id);
+    const request = await Request.findById(id).populate(
+      "createdBy",
+      "displayName email"
+    );
     if (!request) return res.status(404).json({ message: "Request not found" });
 
     if (request.status !== "open" && request.acceptedBy) {
@@ -216,7 +228,7 @@ export async function acceptRequest(req, res, next) {
         .json({ message: "Request already accepted or closed" });
     }
 
-    if (String(request.createdBy) === String(userId)) {
+    if (String(request.createdBy._id || request.createdBy) === String(userId)) {
       return res
         .status(400)
         .json({ message: "You cannot accept your own request" });
@@ -226,28 +238,32 @@ export async function acceptRequest(req, res, next) {
     request.acceptedBy = userId;
     await request.save();
 
+    const actor = req.user.displayName || req.user.email;
+
     // notify requester
     await createNotification({
-      recipientId: request.createdBy,
+      recipientId: request.createdBy._id || request.createdBy,
       type: "request_accepted",
-      message: `${
-        req.user.displayName || req.user.email
-      } accepted your request "${request.title}".`,
+      message: `${actor} accepted your request "${request.title}".`,
+      meta: {
+        requestId: request._id,
+        partnerEmail: req.user.email,
+        partnerName: actor,
+      },
     });
 
     // email accepter
     await sendEmail({
       to: req.user.email,
       subject: "You just accepted a request",
-      body: `Hi ${req.user.displayName}, you just accepted request "${request.title}".`,
+      body: `Hi ${actor}, you just accepted request "${request.title}".`,
     });
 
     // email requester
-    const requestCreator = await Request.findById(id).populate("createdBy");
     await sendEmail({
-      to: requestCreator.createdBy.email,
+      to: request.createdBy.email,
       subject: "Your request was just accepted",
-      body: `Hi ${requestCreator.createdBy.displayName}, your request "${request.title}" was just accepted by ${req.user.displayName}.`,
+      body: `Hi ${request.createdBy.displayName}, your request "${request.title}" was just accepted by ${actor}.`,
     });
 
     res.json(request);
@@ -281,13 +297,18 @@ export async function markComplete(req, res, next) {
     request.completedBy = req.user._id;
     await request.save();
 
-    // notify requester
+    const actor = req.user.displayName || req.user.email;
+
+    // notify requester (includes requestId for bell Confirm)
     await createNotification({
       recipientId: request.createdBy._id,
       type: "request_pending_confirmation",
-      message: `${
-        req.user.displayName || req.user.email
-      } marked your request "${request.title}" as complete. Please confirm.`,
+      message: `${actor} marked your request "${request.title}" as complete. Please confirm.`,
+      meta: {
+        requestId: request._id,
+        partnerEmail: req.user.email,
+        partnerName: actor,
+      },
     });
 
     // email requester
@@ -308,10 +329,9 @@ export async function confirmCompletion(req, res, next) {
   try {
     const { id } = req.params;
 
-    const request = await Request.findById(id).populate(
-      "createdBy",
-      "displayName email"
-    );
+    const request = await Request.findById(id)
+      .populate("createdBy", "displayName email")
+      .populate("completedBy", "displayName email");
     if (!request) return res.status(404).json({ message: "Request not found" });
 
     if (req.user._id.toString() !== request.createdBy._id.toString()) {
@@ -330,14 +350,20 @@ export async function confirmCompletion(req, res, next) {
     request.completedAt = new Date();
     await request.save();
 
-    // notify helper (acceptedBy/completedBy)
+    // notify helper (acceptedBy / completedBy)
     if (request.completedBy) {
       await createNotification({
-        recipientId: request.completedBy,
+        recipientId: request.completedBy._id || request.completedBy,
         type: "request_closed",
         message: `${
           req.user.displayName || req.user.email
         } confirmed completion of "${request.title}".`,
+        meta: {
+          requestId: request._id,
+          partnerEmail: request.createdBy.email,
+          partnerName:
+            request.createdBy.displayName || request.createdBy.email,
+        },
       });
     }
 
@@ -380,22 +406,25 @@ export async function cancelAcceptance(req, res, next) {
     request.status = "open";
     await request.save();
 
+    const actor = req.user.displayName || req.user.email;
+
     // notify requester
     await createNotification({
       recipientId: request.createdBy._id,
       type: "request_canceled",
-      message: `${
-        req.user.displayName || req.user.email
-      } canceled helping with "${request.title}". It's open again.`,
+      message: `${actor} canceled helping with "${request.title}". It's open again.`,
+      meta: {
+        requestId: request._id,
+        partnerEmail: req.user.email,
+        partnerName: actor,
+      },
     });
 
     // optional email to requester
     await sendEmail({
       to: request.createdBy.email,
       subject: "Helper canceled your request",
-      body: `Your request "${request.title}" is now open again because ${
-        req.user.displayName || req.user.email
-      } canceled.`,
+      body: `Your request "${request.title}" is now open again because ${actor} canceled.`,
     });
 
     res.json(request);
@@ -456,16 +485,20 @@ export async function getNearbyRequests(req, res, next) {
 
 /**
  * POST /api/v1/requests/:id/feedback
- * Body: { rating: "helpful" | "not_helpful", comment?: string }
+ * Body: { rating: 1-5, comment?: string }
  * Only the requester can leave feedback, and only once, after the request is closed.
  */
 export async function submitFeedback(req, res, next) {
   try {
     const { id } = req.params;
     const { rating, comment } = req.body || {};
-    const allowedRatings = ["helpful", "not_helpful"];
 
-    if (!allowedRatings.includes(rating)) {
+    const numericRating = Number(rating);
+    if (
+      !Number.isFinite(numericRating) ||
+      numericRating < 1 ||
+      numericRating > 5
+    ) {
       return res.status(400).json({ message: "Invalid rating value" });
     }
 
@@ -483,14 +516,14 @@ export async function submitFeedback(req, res, next) {
 
     // Only after request is closed
     if (request.status !== "closed") {
-      return res
-        .status(400)
-        .json({ message: "Feedback can only be left after the request is closed" });
+      return res.status(400).json({
+        message: "Feedback can only be left after the request is closed",
+      });
     }
 
     // Prevent multiple feedbacks from same user on same request
     const existing =
-      request.feedback &&
+      Array.isArray(request.feedback) &&
       request.feedback.find(
         (f) => f.from && f.from.toString() === req.user._id.toString()
       );
@@ -502,7 +535,7 @@ export async function submitFeedback(req, res, next) {
 
     const feedbackEntry = {
       from: req.user._id,
-      rating,
+      rating: numericRating,
       comment: comment || "",
       createdAt: new Date(),
     };
@@ -521,7 +554,7 @@ export async function submitFeedback(req, res, next) {
           feedbackReceived: {
             request: request._id,
             from: req.user._id,
-            rating,
+            rating: numericRating,
             comment: comment || "",
             createdAt: new Date(),
           },
@@ -540,6 +573,11 @@ export async function submitFeedback(req, res, next) {
           message: `${
             req.user.displayName || req.user.email
           } left feedback on "${request.title}".`,
+          meta: {
+            requestId: request._id,
+            partnerEmail: req.user.email,
+            partnerName: req.user.displayName || req.user.email,
+          },
         });
       } catch (notifyErr) {
         console.error(

@@ -1,3 +1,4 @@
+// frontend/src/components/RequestDetailsModal.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
 import FeedbackModal from "./FeedbackModal.jsx";
@@ -10,15 +11,13 @@ export default function RequestDetailsModal({
   const [req, setReq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false); // used for Accept / Cancel / Delete / Report etc.
+  const [busy, setBusy] = useState(null); // "accept" | "cancel" | "complete" | "confirm" | "delete" | "report" | null
   const [currentUser, setCurrentUser] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
   const dialogRef = useRef(null);
 
-  console.log("onStatusChange prop:", onStatusChange);
-
-  // load request details
+  // ----- Load request details -----
   useEffect(() => {
     if (!requestId) return;
     let mounted = true;
@@ -26,9 +25,11 @@ export default function RequestDetailsModal({
     (async () => {
       try {
         setLoading(true);
+        setErr("");
         const data = await api.getRequest(requestId);
         if (mounted) setReq(data);
-      } catch {
+      } catch (e) {
+        console.error("Failed to load request details:", e);
         if (mounted) setErr("Failed to load request details.");
       } finally {
         if (mounted) setLoading(false);
@@ -40,18 +41,14 @@ export default function RequestDetailsModal({
     };
   }, [requestId]);
 
-  // load current user (for permissions like delete / report)
+  // ----- Load current user (for permissions + messaging) -----
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         const me = await api.me();
-        // handle both shapes: { user: {...} } or plain user
         const user = me?.user || me;
-        if (mounted) {
-          setCurrentUser(user || null);
-          console.log("RequestDetailsModal currentUser:", user);
-        }
+        if (mounted) setCurrentUser(user || null);
       } catch (e) {
         console.error("api.me() failed in RequestDetailsModal:", e);
         if (mounted) setCurrentUser(null);
@@ -62,7 +59,7 @@ export default function RequestDetailsModal({
     };
   }, []);
 
-  // ESC to close
+  // ----- ESC to close -----
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") onClose?.();
@@ -71,7 +68,7 @@ export default function RequestDetailsModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // focus the modal when it opens
+  // ----- Focus the modal when it opens -----
   useEffect(() => {
     const el = dialogRef.current;
     if (!el) return;
@@ -80,21 +77,30 @@ export default function RequestDetailsModal({
     return () => prev && prev.focus && prev.focus();
   }, []);
 
-  // handle Accept button click
+  const userId = currentUser?._id ? String(currentUser._id) : null;
+  const ownerId =
+    req && (req.createdBy?._id || (typeof req.createdBy === "string" && req.createdBy));
+  const helperId =
+    req && (req.acceptedBy?._id || (typeof req.acceptedBy === "string" && req.acceptedBy));
+
+  const isOwner = !!userId && !!ownerId && String(ownerId) === userId;
+  const isHelper = !!userId && !!helperId && String(helperId) === userId;
+  const isAdmin = currentUser && currentUser.role === "admin";
+
+  // ----- Actions -----
   async function handleAccept() {
     if (!requestId) return;
     try {
       setBusy("accept");
-      await api.acceptRequest(requestId);
+      const updated = await api.acceptRequest(requestId);
+      setReq(updated);
       alert("Request accepted!");
-      // update local state so it shows new status
-      setReq((prev) => ({ ...prev, status: "in_progress" })); // Issue #30 behavior
-      onStatusChange("in_progress");
+      onStatusChange?.(updated.status || "in_progress");
     } catch (e) {
       console.error(e);
-      alert("Failed to accept request. You may need to log in.");
+      alert("Failed to accept request. You may need to log in or you might be the owner.");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
@@ -103,51 +109,50 @@ export default function RequestDetailsModal({
     if (!window.confirm("Cancel your acceptance of this request?")) return;
     try {
       setBusy("cancel");
-      await api.cancelAcceptance(requestId);
+      const updated = await api.cancelAcceptance(requestId);
+      setReq(updated);
       alert("Request cancelled.");
-      setReq((prev) => ({ ...prev, status: "open" }));
-      console.log("setReq complete");
-      onStatusChange("open");
+      onStatusChange?.(updated.status || "open");
     } catch (e) {
       console.error(e);
       alert("Failed to cancel request.");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
   async function handleMarkComplete() {
     if (!requestId) return;
     try {
-      setBusy(true);
-      await api.markComplete(requestId);
+      setBusy("complete");
+      const updated = await api.markComplete(requestId);
+      setReq(updated);
       alert("Marked as complete! Awaiting requester confirmation.");
-      setReq((prev) => ({ ...prev, status: "pending_confirmation" }));
-      onStatusChange("pending_confirmation");
+      onStatusChange?.(updated.status || "pending_confirmation");
     } catch (e) {
       console.error(e);
       alert("Failed to mark complete. You may not be authorized.");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
   async function handleConfirmCompletion() {
     if (!requestId) return;
     try {
-      setBusy(true);
-      await api.confirmCompletion(requestId);
+      setBusy("confirm");
+      const updated = await api.confirmCompletion(requestId);
+      setReq(updated);
       alert("Request confirmed and closed!");
-      setReq((prev) => ({ ...prev, status: "closed" }));
-      onStatusChange("closed");
+      onStatusChange?.(updated.status || "closed");
 
-      // after confirmation, prompt for feedback
+      // After confirmation, prompt for feedback
       setShowFeedback(true);
     } catch (e) {
       console.error(e);
       alert("Failed to confirm completion.");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
@@ -164,7 +169,6 @@ export default function RequestDetailsModal({
     }
   }
 
-  // delete / cancel request entirely
   async function handleDeleteRequest() {
     if (!requestId) return;
     const confirmed = window.confirm(
@@ -176,17 +180,16 @@ export default function RequestDetailsModal({
       setBusy("delete");
       await api.deleteRequest(requestId);
       alert("Request deleted.");
-      onStatusChange?.("deleted"); // parent can refresh list
+      onStatusChange?.("deleted");
       onClose?.();
     } catch (e) {
       console.error(e);
       alert("Failed to delete request.");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
-  // report / flag the request for admins
   async function handleReport() {
     if (!requestId) return;
     const confirmed = window.confirm(
@@ -196,17 +199,77 @@ export default function RequestDetailsModal({
 
     try {
       setBusy("report");
-      await api.reportRequest(requestId); // helper in api.js
+      await api.reportRequest(requestId);
       alert("Thanks, your report has been sent to the admins.");
-      setReq((prev) => ({ ...prev, flagged: true }));
+      setReq((prev) => (prev ? { ...prev, flagged: true } : prev));
     } catch (e) {
       console.error(e);
       alert("Failed to report request. You may need to log in.");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
+  // ----- Figure out who the "other person" is for messaging -----
+  function getConversationPartner() {
+    if (!req) return null;
+
+    const normalize = (u) =>
+      !u
+        ? null
+        : {
+            id: String(u._id || u),
+            name: u.displayName || u.email || "",
+            email: u.email || "",
+          };
+
+    const requester = normalize(req.createdBy);
+    const helper = normalize(req.acceptedBy);
+
+    if (userId) {
+      if (requester && requester.id !== userId) {
+        return { role: "requester", ...requester };
+      }
+      if (helper && helper.id !== userId) {
+        return { role: "helper", ...helper };
+      }
+    }
+
+    if (helper && helper.email) return { role: "helper", ...helper };
+    if (requester && requester.email) return { role: "requester", ...requester };
+
+    return null;
+  }
+
+  function handleMessage() {
+    const partner = getConversationPartner();
+    if (!partner || !partner.email) {
+      alert("We couldn't find who to message for this request yet.");
+      return;
+    }
+
+    const subject = encodeURIComponent(
+      `Lend A Hand: "${req?.title || "your request"}"`
+    );
+
+    const myName =
+      currentUser?.displayName || currentUser?.email || "your neighbor";
+
+    const bodyLines = [
+      `Hi ${partner.name || ""},`,
+      "",
+      `I'm reaching out about "${req?.title || "the request"}" on Lend A Hand.`,
+      "",
+      "Thanks!",
+      myName,
+    ];
+
+    const body = encodeURIComponent(bodyLines.join("\n"));
+
+    window.location.href = `mailto:${partner.email}?subject=${subject}&body=${body}`;
+  }
+
+  // ----- Derived values for rendering -----
   if (!requestId) return null;
 
   const status = req?.status || "open";
@@ -214,24 +277,21 @@ export default function RequestDetailsModal({
   const helperName =
     req?.acceptedBy?.displayName || req?.acceptedBy?.email || null;
 
-  // dynamic button visibility
-  const showAccept = status === "open";
-  const showCancel = status === "in_progress";
-  const showMarkComplete = status === "in_progress";
-  const showConfirm = status === "pending_confirmation";
-  const showDeleteWhileOpen = status === "open"; // only deletable while open
+  const showAccept = status === "open" && !isOwner; // backend still enforces but this avoids weird UX
+  const showCancel = status === "in_progress" && isHelper;
+  const showMarkComplete = status === "in_progress" && isHelper;
+  const showConfirm = status === "pending_confirmation" && isOwner;
+  const showDeleteWhileOpen = status === "open";
 
-  // permission check for delete: admin OR owner
-  const isOwner =
-    currentUser &&
-    req &&
-    currentUser._id === (req.createdBy?._id || req.createdBy);
-  const isAdmin = currentUser && currentUser.role === "admin";
   const canDelete = showDeleteWhileOpen && (isOwner || isAdmin);
-
-  // permission for report: must be logged in and NOT the owner
   const canReport = !!currentUser && !isOwner;
 
+  const partner = getConversationPartner();
+  const canMessage = !!partner && !!partner.email;
+
+  const isBusy = !!busy;
+
+  // ----- Render -----
   return (
     <div
       onClick={onClose}
@@ -322,36 +382,34 @@ export default function RequestDetailsModal({
               }}
             >
               {/* Accept */}
-              <button
-                onClick={handleAccept}
-                disabled={busy || !showAccept}
-                style={{
-                  background: "#007bff",
-                  color: "#fff",
-                  border: "none",
-                  padding: "8px 14px",
-                  borderRadius: 6,
-                  cursor: busy ? "wait" : "pointer",
-                }}
-              >
-                {busy === "accept"
-                  ? "Accepting..."
-                  : req?.status === "open"
-                  ? "Accept"
-                  : "Accepted"}
-              </button>
+              {showAccept && (
+                <button
+                  onClick={handleAccept}
+                  disabled={isBusy}
+                  style={{
+                    background: "#007bff",
+                    color: "#fff",
+                    border: "none",
+                    padding: "8px 14px",
+                    borderRadius: 6,
+                    cursor: isBusy ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {busy === "accept" ? "Accepting..." : "Accept"}
+                </button>
+              )}
 
               {showCancel && (
                 <button
                   onClick={handleCancel}
-                  disabled={busy}
+                  disabled={isBusy}
                   style={{
                     background: "#dc3545",
                     color: "#fff",
                     border: "none",
                     padding: "8px 14px",
                     borderRadius: 6,
-                    cursor: busy ? "wait" : "pointer",
+                    cursor: isBusy ? "wait" : "pointer",
                   }}
                 >
                   {busy === "cancel" ? "Cancelling..." : "Cancel"}
@@ -361,57 +419,57 @@ export default function RequestDetailsModal({
               {showMarkComplete && (
                 <button
                   onClick={handleMarkComplete}
-                  disabled={busy}
+                  disabled={isBusy}
                   style={{
                     background: "#28a745",
                     color: "#fff",
                     border: "none",
                     padding: "8px 14px",
                     borderRadius: 6,
-                    cursor: busy ? "wait" : "pointer",
+                    cursor: isBusy ? "wait" : "pointer",
                   }}
                 >
-                  Mark Complete
+                  {busy === "complete" ? "Saving..." : "Mark Complete"}
                 </button>
               )}
 
               {showConfirm && (
                 <button
                   onClick={handleConfirmCompletion}
-                  disabled={busy}
+                  disabled={isBusy}
                   style={{
                     background: "#17a2b8",
                     color: "#fff",
                     border: "none",
                     padding: "8px 14px",
                     borderRadius: 6,
-                    cursor: busy ? "wait" : "pointer",
+                    cursor: isBusy ? "wait" : "pointer",
                   }}
                 >
-                  Confirm Completion
+                  {busy === "confirm" ? "Confirming..." : "Confirm Completion"}
                 </button>
               )}
 
-              {canDelete && (
-                <button
-                  onClick={handleDeleteRequest}
-                  disabled={busy}
-                  style={{
-                    background: "#b00020",
-                    color: "#fff",
-                    border: "none",
-                    padding: "8px 14px",
-                    borderRadius: 6,
-                    cursor: busy ? "wait" : "pointer",
-                    marginLeft: "auto",
-                  }}
-                >
-                  {busy === "delete" ? "Deleting..." : "Delete Request"}
-                </button>
-              )}
-
-              {/* Message still a placeholder */}
-              <button disabled title="Coming soon">
+              {/* Message: email the other person in this request */}
+              <button
+                onClick={handleMessage}
+                disabled={!canMessage}
+                title={
+                  canMessage
+                    ? `Email your ${
+                        partner?.role === "helper" ? "helper" : "neighbor"
+                      }`
+                    : "Messaging is available once we know who to contact."
+                }
+                style={{
+                  background: "#ffffff",
+                  color: canMessage ? "#111" : "#888",
+                  border: "1px solid #d0d5dd",
+                  padding: "8px 14px",
+                  borderRadius: 6,
+                  cursor: canMessage ? "pointer" : "not-allowed",
+                }}
+              >
                 Message
               </button>
 
@@ -419,17 +477,35 @@ export default function RequestDetailsModal({
               {canReport && (
                 <button
                   onClick={handleReport}
-                  disabled={busy}
+                  disabled={isBusy}
                   style={{
                     background: "#6c757d",
                     color: "#fff",
                     border: "none",
                     padding: "8px 14px",
                     borderRadius: 6,
-                    cursor: busy ? "wait" : "pointer",
+                    cursor: isBusy ? "wait" : "pointer",
                   }}
                 >
                   {busy === "report" ? "Reporting..." : "Report"}
+                </button>
+              )}
+
+              {canDelete && (
+                <button
+                  onClick={handleDeleteRequest}
+                  disabled={isBusy}
+                  style={{
+                    background: "#b00020",
+                    color: "#fff",
+                    border: "none",
+                    padding: "8px 14px",
+                    borderRadius: 6,
+                    cursor: isBusy ? "wait" : "pointer",
+                    marginLeft: "auto",
+                  }}
+                >
+                  {busy === "delete" ? "Deleting..." : "Delete Request"}
                 </button>
               )}
 

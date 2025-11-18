@@ -11,7 +11,8 @@ export default function Home() {
     async function fetchUser() {
       try {
         const data = await api.me();
-        setUser(data);
+        const u = data?.user || data || null;
+        setUser(u);
       } catch {
         setUser(null);
       } finally {
@@ -29,6 +30,8 @@ export default function Home() {
     );
   }
 
+  const name = user?.displayName || user?.email || "neighbor";
+
   return (
     <div className="home">
       <div className="home-hero">
@@ -43,9 +46,7 @@ export default function Home() {
         <main className="home-content">
           {user ? (
             <div className="home-actions">
-              <p className="welcome-text">
-                Welcome back, {user.displayName || "neighbor"}!
-              </p>
+              <p className="welcome-text">Welcome back, {name}!</p>
               <div className="home-buttons">
                 <Link to="/browse" className="home-button browse-button">
                   Browse Requests

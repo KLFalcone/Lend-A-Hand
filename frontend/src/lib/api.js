@@ -6,7 +6,6 @@ const DEFAULT_FETCH_OPTS = {
 };
 
 function authHeaders() {
-  // Optional: if you also store a token in localStorage, we attach it.
   const token = localStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -32,7 +31,6 @@ export async function apiFetch(path, options = {}) {
 
     const res = await fetch(`${BASE}${path}`, init);
 
-    // Parse response safely (handles 204 and non-JSON)
     const ct = res.headers.get("content-type") || "";
     let data = null;
 
@@ -55,7 +53,6 @@ export async function apiFetch(path, options = {}) {
   }
 }
 
-// Optional raw helper for special cases (file uploads, etc.)
 export const apiRaw = (path, init = {}) =>
   fetch(`${BASE}${path}`, { ...DEFAULT_FETCH_OPTS, ...init });
 
@@ -84,7 +81,7 @@ export const api = {
   updateMe: (payload) =>
     apiFetch("/api/v1/users/me", {
       method: "PATCH",
-      body: JSON.stringify(payload), // { displayName, address, profilePic }
+      body: JSON.stringify(payload),
     }),
 
   deleteMe: () => apiFetch("/api/v1/users/me", { method: "DELETE" }),
@@ -93,6 +90,16 @@ export const api = {
 
   // me / overview
   meOverview: () => apiFetch("/api/v1/me/overview"),
+
+  // Now implemented via /auth/me -> /feedback/user/:id
+  meFeedback: async () => {
+    const me = await apiFetch("/api/v1/auth/me");
+    const user = me?.user || me;
+    if (!user || !user._id) {
+      throw new Error("You need to be logged in to view feedback.");
+    }
+    return apiFetch(`/api/v1/feedback/user/${user._id}`);
+  },
 
   // requests
   listRequests: (params = {}) => {
@@ -131,11 +138,11 @@ export const api = {
   confirmCompletion: (id) =>
     apiFetch(`/api/v1/requests/${id}/confirm`, { method: "PATCH" }),
 
-  // new helper for nearby search
   getNearbyRequests: (lat, lng, miles) =>
-    apiFetch(`/api/v1/requests/near?lat=${lat}&lng=${lng}&maxDistance=${miles}`),
+    apiFetch(
+      `/api/v1/requests/near?lat=${lat}&lng=${lng}&maxDistance=${miles}`
+    ),
 
-  // report / flag a request (used by RequestDetailsModal)
   reportRequest: (id) =>
     apiFetch(`/api/v1/requests/${id}`, {
       method: "PATCH",
@@ -158,9 +165,12 @@ export const api = {
       body: JSON.stringify({ rating, comment }),
     }),
 
+  // fetch public-ish feedback for a helper
+  getUserFeedback: (userId) =>
+    apiFetch(`/api/v1/feedback/user/${userId}`),
+
   // --- admin ---
   admin: {
-    // User management
     getAllUsers: () => apiFetch("/api/v1/admin/users"),
     updateUser: (id, updates) =>
       apiFetch(`/api/v1/admin/users/${id}`, {
@@ -170,7 +180,6 @@ export const api = {
     deleteUser: (id) =>
       apiFetch(`/api/v1/admin/users/${id}`, { method: "DELETE" }),
 
-    // Request management
     getAllRequests: (params = {}) => {
       const qs = new URLSearchParams(params).toString();
       return apiFetch(`/api/v1/admin/requests${qs ? `?${qs}` : ""}`);
@@ -182,5 +191,7 @@ export const api = {
       }),
     deleteRequest: (id) =>
       apiFetch(`/api/v1/admin/requests/${id}`, { method: "DELETE" }),
+
+    getAllFeedback: () => apiFetch("/api/v1/admin/feedback"),
   },
 };
