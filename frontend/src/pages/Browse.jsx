@@ -17,25 +17,28 @@ const DISTANCE_OPTIONS = [
   { label: "Within 50 mi", value: "50" },
 ];
 
-// State options for basic regional filtering (matches state name in address)
-const STATE_OPTIONS = [
-  { label: "All States", value: "" },
-  { label: "Alabama", value: "Alabama" },
-  { label: "Alaska", value: "Alaska" },
-  { label: "Arizona", value: "Arizona" },
-  { label: "California", value: "California" },
-  { label: "Colorado", value: "Colorado" },
-  { label: "Florida", value: "Florida" },
-  { label: "Georgia", value: "Georgia" },
-  { label: "Illinois", value: "Illinois" },
-  { label: "Maryland", value: "Maryland" },
-  { label: "Massachusetts", value: "Massachusetts" },
-  { label: "New York", value: "New York" },
-  { label: "Ohio", value: "Ohio" },
-  { label: "Pennsylvania", value: "Pennsylvania" },
-  { label: "Texas", value: "Texas" },
-  { label: "Virginia", value: "Virginia" },
-  { label: "Washington", value: "Washington" },
+// Simple list of states for the filter (you can tweak order if you want)
+const STATES = [
+  "",
+  "California",
+  "Virginia",
+  "Maryland",
+  "District of Columbia",
+  "Ohio",
+  "Pennsylvania",
+  "West Virginia",
+  "Kentucky",
+  "Indiana",
+  "Michigan",
+  "New York",
+  "Texas",
+  "Florida",
+  "Illinois",
+  "Arizona",
+  "Colorado",
+  "Washington",
+  "Oregon",
+  "Nevada",
 ];
 
 // Bootstrap badge version
@@ -204,6 +207,8 @@ export default function Browse() {
     return <main className="browse-container">Loading…</main>;
   if (error)
     return <main className="browse-container">{error}</main>;
+  if (!items.length)
+    return <main className="browse-container">No requests yet.</main>;
 
   return (
     <main className="browse-container">
@@ -256,9 +261,9 @@ export default function Browse() {
           onChange={(e) => setStateFilter(e.target.value)}
           className="form-select w-auto"
         >
-          {STATE_OPTIONS.map((opt) => (
-            <option key={opt.label} value={opt.value}>
-              {opt.label}
+          {STATES.map((s) => (
+            <option key={s || "ALL"} value={s}>
+              {s || "All States"}
             </option>
           ))}
         </select>
@@ -303,14 +308,47 @@ export default function Browse() {
           <div>No requests match your filters.</div>
         ) : (
           currentItems.map((r) => {
-            const author =
+            // 1) Figure out the "neighbor" name, even for seed data
+            let author =
               r?.createdBy?.displayName?.trim() ||
               r?.createdBy?.email ||
               r?.author?.displayName?.trim() ||
               r?.author?.email ||
               r?.email ||
-              "Unknown user";
+              "";
+
+            if (!author || author === "Unknown user") {
+              const addr = r?.location?.address || "";
+              if (addr) {
+                const parts = addr.split(",").map((p) => p.trim());
+                const city = parts[0] || "";
+                const state = parts[1] || "";
+                if (city && state) {
+                  author = `Neighbor in ${city}, ${state}`;
+                } else if (state) {
+                  author = `Neighbor in ${state}`;
+                } else if (city) {
+                  author = `Neighbor in ${city}`;
+                } else {
+                  author = "Local neighbor";
+                }
+              } else {
+                author = "Local neighbor";
+              }
+            }
+
+            // 2) Dates
+            const createdDate = r?.createdAt
+              ? new Date(r.createdAt).toLocaleDateString()
+              : null;
+
+            const completedDate =
+              r?.status === "closed" && r?.completedAt
+                ? new Date(r.completedAt).toLocaleDateString()
+                : null;
+
             const id = r._id || r.id;
+
             return (
               <div className="col-md-6 col-lg-4" key={id}>
                 <div
@@ -332,7 +370,11 @@ export default function Browse() {
                       {r.description || "No description provided."}
                     </p>
                     <p className="card-text small text-secondary mb-0">
-                      <i>Posted by {author}</i>
+                      <i>
+                        Posted by {author}
+                        {createdDate && ` on ${createdDate}`}
+                        {completedDate && ` • Completed ${completedDate}`}
+                      </i>
                     </p>
                   </div>
                 </div>

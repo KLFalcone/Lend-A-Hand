@@ -3,6 +3,27 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 
+function getAuthorLabel(post) {
+  const displayName = post?.createdBy?.displayName?.trim();
+  const email = post?.createdBy?.email;
+
+  if (displayName || email) {
+    return displayName || email;
+  }
+
+  const addr = post?.location?.address || "";
+  if (!addr) return "Neighbor";
+
+  const parts = addr.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    const city = parts[parts.length - 3] || parts[parts.length - 2];
+    const state = parts[parts.length - 2];
+    if (city && state) return `Neighbor in ${city}, ${state}`;
+    return `Neighbor in ${state}`;
+  }
+  return `Neighbor in ${parts[0]}`;
+}
+
 export default function SpecificPost() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -23,20 +44,20 @@ export default function SpecificPost() {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [id]);
 
   if (loading) return <main style={{ padding: 16 }}>Loading…</main>;
   if (err) return <main style={{ padding: 16 }}>❌ {err}</main>;
   if (!post) return <main style={{ padding: 16 }}>Not found.</main>;
 
-  const createdBy =
-    post?.createdBy?.displayName || post?.createdBy?.email || "Unknown";
-
-  const createdStr = post.createdAt
+  const createdBy = getAuthorLabel(post);
+  const createdAt = post.createdAt
     ? new Date(post.createdAt).toLocaleString()
-    : "";
-  const completedStr = post.completedAt
+    : null;
+  const completedAt = post.completedAt
     ? new Date(post.completedAt).toLocaleString()
     : null;
 
@@ -56,17 +77,24 @@ export default function SpecificPost() {
       <div style={{ marginTop: 12 }}>
         <p>{post.description}</p>
         {post?.location?.address && (
-          <p><strong>Location:</strong> {post.location.address}</p>
-        )}
-        <p><strong>Posted by:</strong> {createdBy}</p>
-        <p style={{ color: "#667085" }}>
-          <small>Created {createdStr}</small>
-        </p>
-        {completedStr && (
-          <p style={{ color: "#667085" }}>
-            <small>Completed {completedStr}</small>
+          <p>
+            <strong>Location:</strong> {post.location.address}
           </p>
         )}
+        <p>
+          <strong>Posted by:</strong> {createdBy}
+        </p>
+        <p style={{ color: "#667085" }}>
+          <small>
+            {createdAt && <>Created {createdAt}</>}
+            {completedAt && (
+              <>
+                {" "}
+                • Completed {completedAt}
+              </>
+            )}
+          </small>
+        </p>
       </div>
     </main>
   );
