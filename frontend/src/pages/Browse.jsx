@@ -180,8 +180,6 @@ export default function Browse() {
     return <main className="browse-container">Loading…</main>;
   if (error)
     return <main className="browse-container">{error}</main>;
-  if (!items.length)
-    return <main className="browse-container">No requests yet.</main>;
 
   return (
     <main className="browse-container">
