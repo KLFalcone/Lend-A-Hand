@@ -509,7 +509,7 @@ export default function Profile() {
                       marginBottom: 8,
                     }}
                   >
-                    Danger Zone
+                    Warning: Delete Account
                   </p>
                   <button
                     onClick={() => setShowDeleteModal(true)}
@@ -755,7 +755,8 @@ export default function Profile() {
                         fontSize: 12,
                       }}
                     >
-                      Joined{" "}
+                      {/* changed label here */}
+                      Created{" "}
                       {new Date(r.createdAt).toLocaleDateString()}
                     </span>
                   </li>
