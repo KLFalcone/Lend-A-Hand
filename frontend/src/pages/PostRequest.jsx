@@ -26,7 +26,25 @@ export default function PostRequest() {
           navigate("/login");
           return;
         }
-        if (user.address) setAddress(user.address);
+
+        // basic saved address
+        if (user.address) {
+          setAddress(user.address);
+        }
+
+        // if profile has a stored location with coords, hydrate coords too
+        const profileCoords = user?.location?.coordinates;
+        if (
+          Array.isArray(profileCoords) &&
+          profileCoords.length >= 2 &&
+          typeof profileCoords[0] === "number" &&
+          typeof profileCoords[1] === "number"
+        ) {
+          setCoords({
+            lon: profileCoords[0],
+            lat: profileCoords[1],
+          });
+        }
       } catch {
         navigate("/login");
       }
@@ -40,10 +58,34 @@ export default function PostRequest() {
     setMessage("");
     try {
       const { user } = await api.getProfile();
-      if (user?.address) {
-        setAddress(user.address);
-        setCoords(null); // address-only; coords will require geocode or current location
-        setMessage("Using your saved home address.");
+      if (user) {
+        const profileAddress =
+          user.address || user.location?.address || "";
+
+        const profileCoords = user.location?.coordinates;
+
+        if (profileAddress) {
+          setAddress(profileAddress);
+        }
+
+        if (
+          Array.isArray(profileCoords) &&
+          profileCoords.length >= 2 &&
+          typeof profileCoords[0] === "number" &&
+          typeof profileCoords[1] === "number"
+        ) {
+          setCoords({
+            lon: profileCoords[0],
+            lat: profileCoords[1],
+          });
+          setMessage("Using your saved home address and location.");
+        } else if (profileAddress) {
+          // address only, no geo coords
+          setCoords(null);
+          setMessage("Using your saved home address.");
+        } else {
+          setMessage("No saved address on your profile yet.");
+        }
       } else {
         setMessage("No saved address on your profile yet.");
       }
@@ -84,29 +126,33 @@ export default function PostRequest() {
     setMessage("");
     setSubmitting(true);
 
-    // require coords so we always send valid GeoJSON for the 2dsphere index
     if (!title || !description || !category || !urgency || !address) {
       setMessage("Please fill in all required fields.");
       setSubmitting(false);
       return;
     }
-    if (!coords) {
-      setMessage("Please use your current location (or save a profile address and then set location).");
-      setSubmitting(false);
-      return;
-    }
 
     try {
+      const location = {
+        address,
+        type: "Point",
+      };
+
+      // only attach coordinates if we actually have them
+      if (
+        coords &&
+        typeof coords.lat === "number" &&
+        typeof coords.lon === "number"
+      ) {
+        location.coordinates = [Number(coords.lon), Number(coords.lat)]; // [lng, lat]
+      }
+
       const payload = {
         title,
         description,
         category,
         urgency,
-        location: {
-          address,
-          type: "Point",
-          coordinates: [Number(coords.lon), Number(coords.lat)], // [lng, lat]
-        },
+        location,
       };
 
       await api.createRequest(payload);
@@ -144,7 +190,11 @@ export default function PostRequest() {
           required
         />
 
-        <select value={category} onChange={(e) => setCategory(e.target.value)} required>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          required
+        >
           <option value="">Select category</option>
           <option value="Errand">Errand</option>
           <option value="Yardwork">Yardwork</option>
@@ -154,7 +204,11 @@ export default function PostRequest() {
           <option value="Other">Other</option>
         </select>
 
-        <select value={urgency} onChange={(e) => setUrgency(e.target.value)} required>
+        <select
+          value={urgency}
+          onChange={(e) => setUrgency(e.target.value)}
+          required
+        >
           <option value="">Select urgency</option>
           <option value="low">Low</option>
           <option value="medium">Medium</option>
