@@ -17,28 +17,20 @@ const DISTANCE_OPTIONS = [
   { label: "Within 50 mi", value: "50" },
 ];
 
-// Simple list of states for the filter (you can tweak order if you want)
-const STATES = [
-  "",
-  "California",
-  "Virginia",
-  "Maryland",
-  "District of Columbia",
-  "Ohio",
-  "Pennsylvania",
-  "West Virginia",
-  "Kentucky",
-  "Indiana",
-  "Michigan",
-  "New York",
-  "Texas",
-  "Florida",
-  "Illinois",
-  "Arizona",
-  "Colorado",
-  "Washington",
-  "Oregon",
-  "Nevada",
+// State options for the dropdown
+const STATE_OPTIONS = [
+  { label: "All States", value: "" },
+  { label: "California", value: "California" },
+  { label: "Virginia", value: "Virginia" },
+  { label: "Ohio", value: "Ohio" },
+  { label: "West Virginia", value: "West Virginia" },
+  { label: "Kentucky", value: "Kentucky" },
+  { label: "Indiana", value: "Indiana" },
+  { label: "Pennsylvania", value: "Pennsylvania" },
+  { label: "Michigan", value: "Michigan" },
+  { label: "New York", value: "New York" },
+  { label: "Texas", value: "Texas" },
+  { label: "Florida", value: "Florida" },
 ];
 
 // Bootstrap badge version
@@ -153,7 +145,7 @@ export default function Browse() {
     return () => {
       mounted = false;
     };
-  }, [category, urgency, status, distance, coords, stateFilter]);
+  }, [category, urgency, status, distance, stateFilter, coords]);
 
   const clearFilters = () => {
     setCategory("");
@@ -207,8 +199,6 @@ export default function Browse() {
     return <main className="browse-container">Loading…</main>;
   if (error)
     return <main className="browse-container">{error}</main>;
-  if (!items.length)
-    return <main className="browse-container">No requests yet.</main>;
 
   return (
     <main className="browse-container">
@@ -255,15 +245,14 @@ export default function Browse() {
           <option value="closed">Closed</option>
         </select>
 
-        {/* State filter */}
         <select
           value={stateFilter}
           onChange={(e) => setStateFilter(e.target.value)}
           className="form-select w-auto"
         >
-          {STATES.map((s) => (
-            <option key={s || "ALL"} value={s}>
-              {s || "All States"}
+          {STATE_OPTIONS.map((opt) => (
+            <option key={opt.label} value={opt.value}>
+              {opt.label}
             </option>
           ))}
         </select>
@@ -305,50 +294,26 @@ export default function Browse() {
       {/* Requests */}
       <div className="row g-3">
         {currentItems.length === 0 ? (
-          <div>No requests match your filters.</div>
+          <div style={{ textAlign: "center", marginTop: 24 }}>
+            {items.length === 0 &&
+            !category &&
+            !urgency &&
+            !status &&
+            !stateFilter &&
+            !distance
+              ? "No requests yet. Try posting one from the Post page!"
+              : "No requests match your filters. Try adjusting the filters above."}
+          </div>
         ) : (
           currentItems.map((r) => {
-            // 1) Figure out the "neighbor" name, even for seed data
-            let author =
+            const author =
               r?.createdBy?.displayName?.trim() ||
               r?.createdBy?.email ||
               r?.author?.displayName?.trim() ||
               r?.author?.email ||
               r?.email ||
-              "";
-
-            if (!author || author === "Unknown user") {
-              const addr = r?.location?.address || "";
-              if (addr) {
-                const parts = addr.split(",").map((p) => p.trim());
-                const city = parts[0] || "";
-                const state = parts[1] || "";
-                if (city && state) {
-                  author = `Neighbor in ${city}, ${state}`;
-                } else if (state) {
-                  author = `Neighbor in ${state}`;
-                } else if (city) {
-                  author = `Neighbor in ${city}`;
-                } else {
-                  author = "Local neighbor";
-                }
-              } else {
-                author = "Local neighbor";
-              }
-            }
-
-            // 2) Dates
-            const createdDate = r?.createdAt
-              ? new Date(r.createdAt).toLocaleDateString()
-              : null;
-
-            const completedDate =
-              r?.status === "closed" && r?.completedAt
-                ? new Date(r.completedAt).toLocaleDateString()
-                : null;
-
+              "Unknown user";
             const id = r._id || r.id;
-
             return (
               <div className="col-md-6 col-lg-4" key={id}>
                 <div
@@ -370,11 +335,7 @@ export default function Browse() {
                       {r.description || "No description provided."}
                     </p>
                     <p className="card-text small text-secondary mb-0">
-                      <i>
-                        Posted by {author}
-                        {createdDate && ` on ${createdDate}`}
-                        {completedDate && ` • Completed ${completedDate}`}
-                      </i>
+                      <i>Posted by {author}</i>
                     </p>
                   </div>
                 </div>
@@ -411,9 +372,7 @@ export default function Browse() {
         <RequestDetailsModal
           requestId={selectedId}
           onClose={() => setSelectedId(null)}
-          onStatusChange={(newStatus) =>
-            updateStatus(newStatus, selectedId)
-          }
+          onStatusChange={(newStatus) => updateStatus(newStatus, selectedId)}
         />
       )}
     </main>

@@ -9,6 +9,106 @@ const toNum = (v) => (v === undefined ? undefined : Number(v));
 const isFiniteNum = (v) => Number.isFinite(toNum(v));
 
 /**
+ * Basic US state map so we can match both full name and abbreviation,
+ * e.g. "Ohio" -> "OH", "Virginia" -> "VA".
+ */
+const STATE_MAP = {
+  Alabama: "AL",
+  Alaska: "AK",
+  Arizona: "AZ",
+  Arkansas: "AR",
+  California: "CA",
+  Colorado: "CO",
+  Connecticut: "CT",
+  Delaware: "DE",
+  Florida: "FL",
+  Georgia: "GA",
+  Hawaii: "HI",
+  Idaho: "ID",
+  Illinois: "IL",
+  Indiana: "IN",
+  Iowa: "IA",
+  Kansas: "KS",
+  Kentucky: "KY",
+  Louisiana: "LA",
+  Maine: "ME",
+  Maryland: "MD",
+  Massachusetts: "MA",
+  Michigan: "MI",
+  Minnesota: "MN",
+  Mississippi: "MS",
+  Missouri: "MO",
+  Montana: "MT",
+  Nebraska: "NE",
+  Nevada: "NV",
+  "New Hampshire": "NH",
+  "New Jersey": "NJ",
+  "New Mexico": "NM",
+  "New York": "NY",
+  "North Carolina": "NC",
+  "North Dakota": "ND",
+  Ohio: "OH",
+  Oklahoma: "OK",
+  Oregon: "OR",
+  Pennsylvania: "PA",
+  "Rhode Island": "RI",
+  "South Carolina": "SC",
+  "South Dakota": "SD",
+  Tennessee: "TN",
+  Texas: "TX",
+  Utah: "UT",
+  Vermont: "VT",
+  Virginia: "VA",
+  Washington: "WA",
+  "West Virginia": "WV",
+  Wisconsin: "WI",
+  Wyoming: "WY",
+};
+
+/**
+ * Build a MongoDB filter object that includes an optional state filter.
+ * - If state is provided, we try to match both the full name ("Ohio")
+ *   and the postal abbreviation ("OH") in location.address.
+ */
+function withStateFilter(baseFilter, state) {
+  const filter = { ...baseFilter };
+
+  if (!state) return filter;
+
+  const trimmed = String(state).trim();
+  if (!trimmed || trimmed === "All States") {
+    return filter;
+  }
+
+  const abbr = STATE_MAP[trimmed];
+  const orClauses = [];
+
+  // Match the full state name somewhere in the address
+  orClauses.push({
+    "location.address": new RegExp(
+      trimmed.replace(/\s+/g, "\\s+"),
+      "i"
+    ),
+  });
+
+  // If we know the abbreviation, also match that as a word
+  if (abbr) {
+    orClauses.push({
+      "location.address": new RegExp(`\\b${abbr}\\b`, "i"),
+    });
+  }
+
+  if (orClauses.length === 1) {
+    // simple case, no need for $or
+    filter["location.address"] = orClauses[0]["location.address"];
+  } else if (orClauses.length > 1) {
+    filter.$or = orClauses;
+  }
+
+  return filter;
+}
+
+/**
  * Haversine distance between two lat/lng points in meters
  */
 function distanceMeters(lat1, lng1, lat2, lng2) {
@@ -36,7 +136,7 @@ function distanceMeters(lat1, lng1, lat2, lng2) {
  *   tag=Errand  (alias of category)
  *   category=Errand
  *   urgency=low|medium|high
- *   state=Virginia (matches in location.address)
+ *   state=Ohio (matches full name or "OH" in location.address)
  *   lat=39.04&lng=-77.48&maxDistance=5000  (meters; optional)
  */
 export async function list(req, res, next) {
@@ -59,10 +159,8 @@ export async function list(req, res, next) {
     if (category) q.category = category;
     if (urgency) q.urgency = urgency;
 
-    // optional state filter (matches state name in address, case-insensitive)
-    if (state) {
-      q["location.address"] = new RegExp(state, "i");
-    }
+    // build final filter including state logic (full name + abbreviation)
+    const mongoFilter = withStateFilter(q, state);
 
     const hasGeo =
       lat !== undefined &&
@@ -77,7 +175,7 @@ export async function list(req, res, next) {
       const lngNum = Number(lng);
       const maxDistNum = Number(maxDistance);
 
-      const docs = await Request.find(q)
+      const docs = await Request.find(mongoFilter)
         .sort({ createdAt: -1 })
         .populate("createdBy", "displayName email")
         .populate("acceptedBy", "displayName email")
@@ -104,7 +202,7 @@ export async function list(req, res, next) {
     }
 
     // No geo filters: regular query
-    const items = await Request.find(q)
+    const items = await Request.find(mongoFilter)
       .sort({ createdAt: -1 })
       .populate("createdBy", "displayName email")
       .populate("acceptedBy", "displayName email");
