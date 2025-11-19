@@ -33,6 +33,13 @@ export default function SpecificPost() {
   const createdBy =
     post?.createdBy?.displayName || post?.createdBy?.email || "Unknown";
 
+  const createdStr = post.createdAt
+    ? new Date(post.createdAt).toLocaleString()
+    : "";
+  const completedStr = post.completedAt
+    ? new Date(post.completedAt).toLocaleString()
+    : null;
+
   return (
     <main style={{ padding: 16, maxWidth: 800, margin: "0 auto" }}>
       <button onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
@@ -53,8 +60,13 @@ export default function SpecificPost() {
         )}
         <p><strong>Posted by:</strong> {createdBy}</p>
         <p style={{ color: "#667085" }}>
-          <small>Created {new Date(post.createdAt).toLocaleString()}</small>
+          <small>Created {createdStr}</small>
         </p>
+        {completedStr && (
+          <p style={{ color: "#667085" }}>
+            <small>Completed {completedStr}</small>
+          </p>
+        )}
       </div>
     </main>
   );

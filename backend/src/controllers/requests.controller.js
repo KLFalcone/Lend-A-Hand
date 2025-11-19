@@ -36,11 +36,21 @@ function distanceMeters(lat1, lng1, lat2, lng2) {
  *   tag=Errand  (alias of category)
  *   category=Errand
  *   urgency=low|medium|high
+ *   state=Virginia (matches in location.address)
  *   lat=39.04&lng=-77.48&maxDistance=5000  (meters; optional)
  */
 export async function list(req, res, next) {
   try {
-    const { status, tag, category, lat, lng, maxDistance, urgency } = req.query;
+    const {
+      status,
+      tag,
+      category,
+      lat,
+      lng,
+      maxDistance,
+      urgency,
+      state,
+    } = req.query;
 
     const q = {};
     if (status) q.status = status;
@@ -48,6 +58,11 @@ export async function list(req, res, next) {
     if (tag) q.category = tag;
     if (category) q.category = category;
     if (urgency) q.urgency = urgency;
+
+    // optional state filter (matches state name in address, case-insensitive)
+    if (state) {
+      q["location.address"] = new RegExp(state, "i");
+    }
 
     const hasGeo =
       lat !== undefined &&
@@ -297,6 +312,12 @@ export async function markComplete(req, res, next) {
 
     request.status = "pending_confirmation";
     request.completedBy = req.user._id;
+
+    // set the actual completion time when the helper marks it complete
+    if (!request.completedAt) {
+      request.completedAt = new Date();
+    }
+
     await request.save();
 
     const actor = req.user.displayName || req.user.email;
@@ -349,7 +370,12 @@ export async function confirmCompletion(req, res, next) {
     }
 
     request.status = "closed";
-    request.completedAt = new Date();
+
+    // keep the original completion time if it exists; otherwise set a fallback
+    if (!request.completedAt) {
+      request.completedAt = new Date();
+    }
+
     await request.save();
 
     // notify helper (acceptedBy / completedBy)

@@ -17,6 +17,27 @@ const DISTANCE_OPTIONS = [
   { label: "Within 50 mi", value: "50" },
 ];
 
+// State options for basic regional filtering (matches state name in address)
+const STATE_OPTIONS = [
+  { label: "All States", value: "" },
+  { label: "Alabama", value: "Alabama" },
+  { label: "Alaska", value: "Alaska" },
+  { label: "Arizona", value: "Arizona" },
+  { label: "California", value: "California" },
+  { label: "Colorado", value: "Colorado" },
+  { label: "Florida", value: "Florida" },
+  { label: "Georgia", value: "Georgia" },
+  { label: "Illinois", value: "Illinois" },
+  { label: "Maryland", value: "Maryland" },
+  { label: "Massachusetts", value: "Massachusetts" },
+  { label: "New York", value: "New York" },
+  { label: "Ohio", value: "Ohio" },
+  { label: "Pennsylvania", value: "Pennsylvania" },
+  { label: "Texas", value: "Texas" },
+  { label: "Virginia", value: "Virginia" },
+  { label: "Washington", value: "Washington" },
+];
+
 // Bootstrap badge version
 const StatusBadge = ({ status }) => {
   const s = String(status || "open").toLowerCase();
@@ -47,6 +68,7 @@ export default function Browse() {
   const [urgency, setUrgency] = useState("");
   const [distance, setDistance] = useState("");
   const [status, setStatus] = useState("");
+  const [stateFilter, setStateFilter] = useState("");
 
   // pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,6 +116,7 @@ export default function Browse() {
         if (status) params.status = status;
         if (category) params.category = category;
         if (urgency) params.urgency = urgency;
+        if (stateFilter) params.state = stateFilter;
 
         // only attach geo filters if user picked a distance AND we have coords
         if (distance && coords) {
@@ -127,13 +150,14 @@ export default function Browse() {
     return () => {
       mounted = false;
     };
-  }, [category, urgency, status, distance, coords]);
+  }, [category, urgency, status, distance, coords, stateFilter]);
 
   const clearFilters = () => {
     setCategory("");
     setUrgency("");
     setDistance("");
     setStatus("");
+    setStateFilter("");
   };
 
   // distance change handler: if user picks a distance but we have no coords,
@@ -224,6 +248,19 @@ export default function Browse() {
             Pending Confirmation
           </option>
           <option value="closed">Closed</option>
+        </select>
+
+        {/* State filter */}
+        <select
+          value={stateFilter}
+          onChange={(e) => setStateFilter(e.target.value)}
+          className="form-select w-auto"
+        >
+          {STATE_OPTIONS.map((opt) => (
+            <option key={opt.label} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
         </select>
 
         <select
