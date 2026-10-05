@@ -8,7 +8,9 @@ Originally developed as a Franklin University Computer Science practicum project
 
 ## Overview
 
-Lend A Hand provides a structured way for community members to request and offer everyday assistance, including tasks such as:
+Lend A Hand was built to make it easier for people within a community to request help, discover nearby opportunities to assist others, and manage those interactions in one place.
+
+The platform supports everyday needs such as:
 
 - Grocery pickup
 - Transportation
@@ -16,7 +18,9 @@ Lend A Hand provides a structured way for community members to request and offer
 - Household assistance
 - Other neighborhood requests
 
-The application combines user authentication, role-based access control, request workflows, notifications, administrative tools, and location-based filtering in a full-stack web application.
+Rather than relying on scattered messages or informal coordination, Lend A Hand provides a structured request workflow with authentication, location-based discovery, notifications, feedback, and administrative tools.
+
+The application uses a React frontend, Express/Node.js backend, and MongoDB database connected through REST APIs.
 
 ---
 
@@ -56,33 +60,37 @@ The application combines user authentication, role-based access control, request
 
 ### Community Requests
 
-Users can create and manage requests for assistance within their community.
+Users can create and manage requests for assistance while providing the information volunteers need to understand what help is needed.
 
-Requests include structured information that allows volunteers to understand what help is needed and where it is needed.
+Requests are organized through defined states so both the requester and volunteer can follow the request from creation through completion.
 
 ### Location-Based Discovery
 
-Lend A Hand supports geographic filtering to help users find relevant requests based on location and distance.
+Geographic filtering helps users find relevant requests based on location and distance, making the platform more useful for assistance that depends on being nearby.
 
 ### Authentication & Access Control
 
-The application includes authenticated user sessions and protected functionality based on user roles.
+JWT authentication and role-based access control protect user accounts and restrict functionality based on the user's role.
 
-### Request Workflow
+Protected routes ensure that authenticated functionality is only available to authorized users.
 
-Requests move through defined states as they are created, accepted, completed, or otherwise updated.
+### Request Workflows
+
+The application manages request activity through structured workflows for creating, joining, updating, and completing assistance requests.
+
+This provides a consistent way to track what stage a request is in and who is involved.
 
 ### Notifications
 
-Users receive application feedback as request activity and status change.
+Notifications provide feedback when activity occurs around a user's requests and help keep participants informed as request status changes.
 
 ### Administrative Tools
 
-Administrative functionality supports application oversight and management.
+Administrative functionality provides additional oversight for managing users, requests, and platform activity.
 
 ### Feedback & Support
 
-The platform includes user feedback, ratings, support resources, and informational pages.
+Users can provide ratings and feedback after interactions, while dedicated support, privacy, and informational pages provide additional platform resources.
 
 ---
 
@@ -101,6 +109,8 @@ MongoDB
 ```
 
 The frontend and backend are maintained as separate applications within the same repository.
+
+The React client handles the user interface and communicates with the Express backend through REST endpoints. The backend manages authentication, application logic, request workflows, and database access through Mongoose.
 
 ---
 
@@ -180,13 +190,13 @@ Environment variables and credentials are intentionally excluded from source con
 
 Sensitive configuration such as database credentials and authentication secrets should be supplied through local environment variables and should never be committed to the repository.
 
+Authentication and authorization are handled using JWT-based authentication, protected routes, and role-based access control.
+
 ---
 
 ## Development Process
 
-Lend A Hand was developed by a six-person team using an Agile workflow.
-
-Development included:
+Lend A Hand was developed collaboratively using an Agile workflow with:
 
 - Feature branches
 - Pull requests
@@ -196,47 +206,7 @@ Development included:
 - Frontend/backend integration
 - Testing and debugging across shared application workflows
 
-The repository preserves the original team commit history.
-
----
-
-## My Role
-
-I served as **Team Lead** while also contributing directly to development across the application.
-
-My work included areas such as:
-
-- REST API development
-- JWT authentication and role-based access control
-- Protected application routes
-- Request lifecycle workflows
-- Notifications and administrative functionality
-- Geographic request filtering
-- Frontend/backend integration
-- Team coordination and GitHub workflow management
-
----
-
-## Original Team
-
-Lend A Hand was developed collaboratively as a Franklin University practicum project.
-
-### COMP 495
-
-- Kat Falcone
-- Nick Ocheltree
-
-### COMP 394
-
-- Katie O'Connell
-- Jack Gifford
-
-### COMP 294
-
-- Avery Miller
-- April Giljahn
-
-All contributors retain credit for their work. This repository preserves the project's original Git history while making the completed project available through my personal portfolio.
+The repository preserves the project's original development history.
 
 ---
 
