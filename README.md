@@ -1,211 +1,247 @@
-# Neighborhood Help
+# Lend A Hand
 
-This is the team repository for Team 8.  
+A full-stack community assistance platform designed to connect neighbors who need help with people nearby who are willing to provide it.
 
-## Project
+Originally developed as a Franklin University Computer Science practicum project by a six-person Agile team.
 
-Welcome to **Neighborhood Help**, our COMP 495 practicum project!  
-This is a MERN stack (MongoDB, Express, React, Node.js) web app where neighbors can ask for and offer help.  
+---
 
-We’ve kept the setup instructions super simple so everyone can get running quickly  
+## Overview
 
-## Project Description  
-Neighborhood Help is a community-based web application where neighbors can both ask for and offer help. The platform simplifies everyday assistance tasks like grocery pickup, dog walking, or rides to the doctor. It promotes trust and stronger local connections by providing an organized and safe space for matching requests with volunteers.
+Lend A Hand provides a structured way for community members to request and offer everyday assistance, including tasks such as:
 
-## Team
+- Grocery pickup
+- Transportation
+- Pet care
+- Household assistance
+- Other neighborhood requests
 
-**495 Students**  
-Kat Falcone  
-Nick Ocheltree  
+The application combines user authentication, role-based access control, request workflows, notifications, administrative tools, and location-based filtering in a full-stack web application.
 
-**394 Students**  
-Katie O’Connell  
-Jack Gifford  
+---
 
-**294 Students**  
-Avery Miller  
-April Giljahn  
+## Tech Stack
 
-## Prerequisites  
+### Frontend
 
-Make sure you have these installed:  
-- [Git](https://git-scm.com/)  
-- [Node.js](https://nodejs.org/) (v18 or higher recommended, npm included)  
-- [VS Code](https://code.visualstudio.com/) (recommended editor)  
-- [GitHub Desktop](https://desktop.github.com/) (optional, easier for beginners)  
+- React
+- Vite
+- JavaScript
+- CSS
 
-You do **not** need to install MongoDB locally or create an Atlas account — the leads will provide the connection string in the `.env`.  
+### Backend
 
-All project dependencies (Express, React, Axios, Mongoose, etc.) install automatically when you run `npm install`.  
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
 
+### Authentication & Security
 
-<details>
- <summary> Quick Start (Advanced Setup)</summary>  
-<b>Note:</b><br>
-This shortcut setup is mainly for 495/394 students or anyone already comfortable with Node/MERN.<br>
-It is <b>not recommended for 294 students or less experienced developers</b> — please use the detailed instructions below if you’re new to this workflow.<br>  
-<br>
-git clone https://github.com/FranklinUniversityCompSciPracticum/Fall_2025_Team8_Repo.git<br>  
-cd Fall_2025_Team8_Repo<br>  
-<br>
+- JSON Web Tokens (JWT)
+- Role-Based Access Control (RBAC)
+- Protected routes
+- Input validation
 
-**Backend**   
-cd backend  
-npm install  
-copy .env.example .env   # on Windows PowerShell  
+### Development & Deployment
 
-**Frontend**    
-cd ../frontend  
-npm install  
-copy .env.example .env   # make sure VITE_API_BASE_URL is set  
+- Git / GitHub
+- REST APIs
+- Docker
+- Agile development workflow
 
-**run these in separate terminals:**   
-cd backend  
-npm run dev  
+---
 
-cd frontend  
-npm run dev  
+## Core Features
 
-Backend API → http://localhost:5000  
-Frontend → http://localhost:5173  
+### Community Requests
 
-See below for detailed setup, common fixes, and contributing guidelines.  
-</details>
+Users can create and manage requests for assistance within their community.
 
-## Full Set Up and Installation Guide
+Requests include structured information that allows volunteers to understand what help is needed and where it is needed.
 
-### 1. Clone the repo
-cd ~/Documents/dev    # or any folder you keep projects in 
-git clone https://github.com/FranklinUniversityCompSciPracticum/Fall_2025_Team8_Repo.git  
-cd Fall_2025_Team8_Repo  
+### Location-Based Discovery
 
-### 2. Install dependencies  
-Run these separately in backend and frontend  
+Lend A Hand supports geographic filtering to help users find relevant requests based on location and distance.
 
-Backend:  
+### Authentication & Access Control
 
-cd backend  
-npm install  
-copy .env.example .env   # on Windows PowerShell  
-**ask Kat/Nick for the real values to put inside `.env`.**  
+The application includes authenticated user sessions and protected functionality based on user roles.
 
-Frontend:  
+### Request Workflow
 
-cd ../frontend  
-npm install  
-copy .env.example .env   # make sure VITE_API_BASE_URL is set  
+Requests move through defined states as they are created, accepted, completed, or otherwise updated.
 
-<b>Database Seeding</b>
+### Notifications
 
-To populate the database with demo users and requests, run:
+Users receive application feedback as request activity and status change.
+
+### Administrative Tools
+
+Administrative functionality supports application oversight and management.
+
+### Feedback & Support
+
+The platform includes user feedback, ratings, support resources, and informational pages.
+
+---
+
+## Architecture
+
+```text
+React / Vite Frontend
+        |
+        | REST API / JSON
+        v
+Node.js + Express Backend
+        |
+        | Mongoose
+        v
+MongoDB
+```
+
+The frontend and backend are maintained as separate applications within the same repository.
+
+---
+
+## Project Structure
+
+```text
+Lend-A-Hand/
+|
+|-- backend/          Express API, database models, authentication
+|
+|-- frontend/         React / Vite client application
+|
+|-- .gitignore
+|-- package.json
+`-- README.md
+```
+
+---
+
+## Running Locally
+
+### Prerequisites
+
+- Node.js
+- npm
+- MongoDB connection
+
+Clone the repository:
 
 ```bash
-npm run seed
+git clone https://github.com/KLFalcone/Lend-A-Hand.git
+cd Lend-A-Hand
 ```
-ProTip: After running the seed, pop open your terminal logs or check MongoDB Compass to confirm the demo users and requests actually made it in. 
 
-### 3. Run the app  
+### Backend
 
-Open two terminals (one for backend, one for frontend):  
+```bash
+cd backend
+npm install
+```
 
-Backend (Terminal 1):  
+Create a local `.env` file using the provided example configuration and supply the required environment variables.
 
-cd backend  
-npm run dev  
+Then run:
 
-Frontend (Terminal 2):  
+```bash
+npm run dev
+```
 
-cd frontend  
-npm run dev  
+The backend runs locally on:
 
-Now open your browser and you should see the app!  
+```text
+http://localhost:5000
+```
 
-Backend API → **http://localhost:5000**  
+### Frontend
 
-Frontend → **http://localhost:5173**  
+From the project root:
 
----
-### 4. Testing  
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-Open the frontend URL in your browser.  
+The frontend runs locally on:
 
-Try navigating around — you should see the app load.  
-
-If the backend is running, requests will save to MongoDB.  
-
-***Tips for Newbies***  
-
-Always run npm install inside both backend and frontend after pulling code.  
-
-If something breaks, delete node_modules and run npm install again.  
-
-If the app won’t start, see Common Errors & Fixes below.  
-
----
-### Common Errors & Fixes  
-
-Q: npm: command not found  
-A: Install Node.js from https://nodejs.org  
- and reopen your terminal.  
-
-Q: Port already in use (EADDRINUSE: 5000 or 5173)  
-A: Another app is using that port. Close it, or change the port (backend uses PORT in .env).  
-
-Q: Frontend loads but “API not reachable”  
-A: Make sure the backend is running, and frontend/.env has VITE_API_BASE_URL=http://localhost:5000.  
-
-Q: “Cannot find module …”  
-A: Run npm install inside both /backend and /frontend.  
-
-Q: I changed code but nothing updated  
-A: Backend → restart with npm run dev (uses nodemon).  
-Frontend → stop and re-run npm run dev.  
+```text
+http://localhost:5173
+```
 
 ---
-### Contributing  
 
-Team Workflow - We’re all working on the same repo, so here’s the safe way to add your code without breaking things:  
+## Security
 
-1. Make sure you’re up to date.  
+Environment variables and credentials are intentionally excluded from source control.
 
-git checkout main  
-git pull origin main  
+Sensitive configuration such as database credentials and authentication secrets should be supplied through local environment variables and should never be committed to the repository.
 
-2. Create a new branch for your work  
-Branch names should describe what you’re doing. Examples:  
-    feat/request-form  
-    fix/login-bug  
-    style/homepage-layout  
+---
 
-git checkout -b feat/your-feature-name  
+## Development Process
 
-3. Do your coding.  
-    Make changes in your branch. Run the app locally to test (npm run dev in frontend/backend).  
+Lend A Hand was developed by a six-person team using an Agile workflow.
 
-4. Commit your changes  
-    Keep commits small and meaningful. Example:  
+Development included:
 
-git add .  
-git commit -m "Add request form component"  
+- Feature branches
+- Pull requests
+- Code reviews
+- Git-based collaboration
+- Incremental feature development
+- Frontend/backend integration
+- Testing and debugging across shared application workflows
 
-5. Push your branch to GitHub  
+The repository preserves the original team commit history.
 
-git push origin feat/your-feature-name  
+---
 
-6. Open a Pull Request (PR)  
+## My Role
 
-    Go to our repo on GitHub  
-    You’ll see a button to Compare & Pull Request  
-    Add a short description of what you did  
+I served as **Team Lead** while also contributing directly to development across the application.
 
-7. Get it merged  
+My work included areas such as:
 
-    Once approved by Kat or Nick, we’ll merge it into main and delete your branch. Then everyone pulls the latest code which is why you need to always update your local main branch. 
+- REST API development
+- JWT authentication and role-based access control
+- Protected application routes
+- Request lifecycle workflows
+- Notifications and administrative functionality
+- Geographic request filtering
+- Frontend/backend integration
+- Team coordination and GitHub workflow management
 
-git checkout main  
-git pull origin main  
+---
 
-***Important***  
-Never commit directly to main. Always use a branch + PR.  
-Don’t commit .env files (they’re ignored in .gitignore anyway).  
-Always run npm install again if new dependencies are added.  
+## Original Team
+
+Lend A Hand was developed collaboratively as a Franklin University practicum project.
+
+### COMP 495
+
+- Kat Falcone
+- Nick Ocheltree
+
+### COMP 394
+
+- Katie O'Connell
+- Jack Gifford
+
+### COMP 294
+
+- Avery Miller
+- April Giljahn
+
+All contributors retain credit for their work. This repository preserves the project's original Git history while making the completed project available through my personal portfolio.
+
+---
+
+## Project Goal
+
+Lend A Hand was built around a simple idea:
+
+**Make it easier for people in the same community to find, organize, and provide help when someone needs it.**
