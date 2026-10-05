@@ -1,5 +1,12 @@
-const RAW_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000";
-const BASE = RAW_BASE.replace(/\/+$/, ""); // strip trailing slash
+// frontend/src/lib/api.js
+
+// Base URL for the backend API
+const RAW_BASE =
+  import.meta.env.VITE_API_URL ||
+  "https://lendahand-backend.katcrypt.com/api/v1";
+
+// strip trailing slash just in case
+const BASE = RAW_BASE.replace(/\/+$/, "");
 
 const DEFAULT_FETCH_OPTS = {
   credentials: "include", // send/receive auth cookie

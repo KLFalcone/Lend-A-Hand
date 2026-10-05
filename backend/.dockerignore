@@ -1,0 +1,35 @@
+# Node modules should never go into the Docker build context
+node_modules
+npm-debug.log
+
+# Environment files
+.env
+.env.development
+.env.production
+.env.local
+
+# Logs
+*.log
+logs
+debug.log
+error.log
+
+# Output folders
+dist
+build
+coverage
+
+# Docker files themselves
+Dockerfile
+.dockerignore
+
+# Git & editor configs
+.git
+.gitignore
+.gitmodules
+.vscode
+.idea
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
